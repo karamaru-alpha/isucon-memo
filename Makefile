@@ -7,7 +7,7 @@ DB_HOST:=127.0.0.1
 DB_PORT:=3306
 DB_USER:=isucon
 DB_PASS:=isucon
-DB_NAME:=isucon
+DB_NAME:=isuconｓ
 MYSQL_LOG:=/var/log/mysql/slow-query.log
 NGINX_LOG:=/var/log/nginx/access.log
 GO_LOG:=/var/log/go.log
@@ -23,7 +23,7 @@ setup:
 	git config --global user.email mrnk3078@gmail.com
 	git config --global pull.rebase false
 	git config credential.helper store
-	curl -OL https://raw.githubusercontent.com/karamaru-alpha/isucon-memo/main/slow.shs
+	curl -OL https://raw.githubusercontent.com/karamaru-alpha/isucon-memo/main/slow.sh
 	sudo chmod +x ./slow.sh
 	curl -OL https://raw.githubusercontent.com/karamaru-alpha/isucon-memo/main/analyze.sh
 	sudo chmod +x ./analyze.sh
