@@ -23,6 +23,10 @@ setup:
 	git config --global user.email mrnk3078@gmail.com
 	git config --global pull.rebase false
 	git config credential.helper store
+	curl -OL https://raw.githubusercontent.com/karamaru-alpha/isucon-memo/main/slow.shs
+	sudo chmod +x ./slow.sh
+	curl -OL https://raw.githubusercontent.com/karamaru-alpha/isucon-memo/main/analyze.sh
+	sudo chmod +x ./analyze.sh
 	wget https://github.com/matsuu/kataribe/releases/download/v0.4.1/kataribe-v0.4.1_linux_amd64.zip -O kataribe.zip
 	unzip -o kataribe.zip
 	sudo mv kataribe /usr/local/bin/
