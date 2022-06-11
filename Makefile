@@ -46,8 +46,8 @@ setup:
 .PHONY: before
 before:
 	cd $(APP_PATH)
-	git checkout .
-	git clean -df .
+	git checkout . && git clean -df .
+	git rev-parse --abbrev-ref HEAD | xargs echo "BRANCH:"
 	git rev-parse --abbrev-ref HEAD | xargs git pull origin
 #	sudo cp my.cnf /etc/mysql/my.cnf
 #	sudo cp nginx.conf /etc/nginx/nginx.conf
