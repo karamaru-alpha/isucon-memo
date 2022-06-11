@@ -1,13 +1,12 @@
-MAIN_SERVER:=isu1
-DB_SERVER:=isu1
-# APP_SERVER:=isu3
+APP_PATH=/home/isucon/webapp
+GO_PATH=/home/isucon/webapp/golang
 
 APP:=isucondition
 DB_HOST:=127.0.0.1
 DB_PORT:=3306
 DB_USER:=isucon
 DB_PASS:=isucon
-DB_NAME:=isuconｓ
+DB_NAME:=isucon
 MYSQL_LOG:=/var/log/mysql/slow-query.log
 NGINX_LOG:=/var/log/nginx/access.log
 GO_LOG:=/var/log/go.log
@@ -46,24 +45,23 @@ setup:
 
 .PHONY: before
 before:
-	ssh $(MAIN_SERVER) "\
-		cd $(APP_PATH);\
-		git stash;\
-		git pull origin main;\
-		sudo cp my.cnf /etc/mysql/my.cnf;\
-		sudo cp nginx.conf /etc/nginx/nginx.conf;\
-		sudo cp $(APP).conf /etc/nginx/sites-enabled/$(APP).conf;\
-		(cd go && $(GO_PATH) mod tidy);\
-		(cd go && $(GO_PATH) build -o $(APP));\
-		sudo cp /dev/null $(MYSQL_LOG);\
-		sudo cp /dev/null $(MYSQL_ERR);\
-		sudo cp /dev/null $(NGINX_LOG);\
-		sudo cp /dev/null $(NGINX_ERR);\
-		sudo cp /dev/null $(GO_LOG);\
-		sudo systemctl restart nginx;\
-		sudo systemctl restart mysql;\
-		sudo systemctl restart $(APP).go.service;\
-	"
+	cd $(APP_PATH)
+	git checkout .
+	git clean -df .
+	git rev-parse --abbrev-ref HEAD | xargs git pull origin
+#	sudo cp my.cnf /etc/mysql/my.cnf
+#	sudo cp nginx.conf /etc/nginx/nginx.conf
+#	sudo cp $(APP).conf /etc/nginx/sites-enabled/$(APP).conf
+#	(cd go && $(GO_PATH) mod tidy)
+#	(cd go && $(GO_PATH) build -o $(APP))
+#	sudo cp /dev/null $(MYSQL_LOG)
+#	sudo cp /dev/null $(MYSQL_ERR)
+#	sudo cp /dev/null $(NGINX_LOG)
+#	sudo cp /dev/null $(NGINX_ERR)
+#	sudo cp /dev/null $(GO_LOG)
+#	sudo systemctl restart nginx
+#	sudo systemctl restart mysql
+#	sudo systemctl restart $(APP).go.service
 
 .PHONY: before-db
 before-db:
@@ -79,21 +77,22 @@ before-db:
 
 .PHONY: slow
 slow:
-	ssh $(DB_SERVER) "sudo $(APP_PATH)/slow.sh $(MYSQL_LOG)"
+	sudo $(APP_PATH)/slow.sh $(MYSQL_LOG)
 # sudo pt-query-digest $(MYSQL_LOG) -limit=5 --report-format=query_report // --filter='$event->{arg} =~ m/^select/i'
 
 .PHONY: kataru
 kataru:
-	ssh $(MAIN_SERVER) "sudo cat $(NGINX_LOG) | kataribe -f $(APP_PATH)/kataribe.toml"
+	sudo cat $(NGINX_LOG) | kataribe -f $(APP_PATH)/kataribe.toml
 
 .PHONY: log
 log:
-	ssh $(MAIN_SERVER) "sudo cat $(GO_LOG)"
+	sudo cat $(GO_LOG)
 
 .PHONY: fetch
 fetch:
-	ssh $(MAIN_SERVER) "cd $(APP_PATH) && git fetch origin main && git reset --hard origin/main"
+	cd $(APP_PATH) && git fetch origin main && git reset --hard origin/main
 
 .PHONY: sql
 sql:
 	mysql -h$(DB_HOST) -P$(DB_PORT) -u$(DB_USER) -p$(DB_PASS) $(DB_NAME)
+	# docker-compose exec mysql bash -c 'mysql -uisucon -pisucon isucari'
