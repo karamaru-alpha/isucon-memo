@@ -139,3 +139,22 @@ server {
   }
 }
 ```
+
+#### 静的ファイルの配信
+
+```conf
+server {
+  listen 80;
+
+  root /public/;
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+  }
+
+  location /assets/ {
+    try_files $uri /;
+    expires 1d;
+  }
+}
+```
