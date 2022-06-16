@@ -116,3 +116,26 @@ interpolateParams=true
 ```sql
 SHOW ENGINE INNODB STATUS;
 ```
+
+
+## Nginx
+
+#### keepaliveを有効する
+
+HTTP/1.1を使用する&Connectionヘッダを空にする必要がある
+```conf
+upstream app {
+  server 127.0.0.1:3000;
+  keepalive 32;
+  keepalive_requests 10000;
+}
+server {
+  listen 80;
+  root /public/;
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_pass http://app;
+  }
+}
+```
