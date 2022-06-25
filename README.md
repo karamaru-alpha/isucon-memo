@@ -261,3 +261,45 @@ sudo systemctl daemon-reload
 ```
 arch
 ```
+
+
+## Nginx
+
+#### keepaliveを有効する
+
+HTTP/1.1を使用する&Connectionヘッダを空にする必要がある
+```conf
+upstream app {
+  server 127.0.0.1:3000;
+  keepalive 32;
+  keepalive_requests 10000;
+}
+server {
+  listen 80;
+  root /public/;
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_pass http://app;
+  }
+}
+```
+
+#### 静的ファイルの配信
+
+```conf
+server {
+  listen 80;
+
+  root /public/;
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+  }
+
+  location /assets/ {
+    try_files $uri /;
+    expires 1d;
+  }
+}
+```
