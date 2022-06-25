@@ -20,11 +20,20 @@ git push -u origin main
 
 ## 調査
 
-- Makefileに変数を適用する
-
-- データ量とスキーマをissueに起票する
-
+- VMの性能確認 
+```sh
+free -h
+fgrep 'cpu cores' /proc/cpuinfo | sort -u | sed 's/.*: //'
+systemctl list-unit-files --type=service
 ```
+
+- DBのバージョンとスキーマの確認
+
+```sh
+mysql --version
+```
+
+```sh
 mysqldump -uroot -proot --host 127.0.0.1 --port 3306 ${DATABASE} --compact --no-data --compact --no-data | grep -v "^SET" | grep -v "^/\*\!" | perl -ple 's@CREATE TABLE @\nCREATE TABLE @g';
 ```
 
@@ -41,6 +50,8 @@ WHERE
 ORDER BY
   (data_length+index_length) DESC;
 ```
+
+- Makefileに変数を適用する
 
 #### Mysql - スロークエリ
 
