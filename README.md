@@ -1,6 +1,31 @@
-## 初手
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- ベンチを回す
+- [セットアップ](#%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97)
+- [調査](#%E8%AA%BF%E6%9F%BB)
+    - [Mysql - スロークエリ](#mysql---%E3%82%B9%E3%83%AD%E3%83%BC%E3%82%AF%E3%82%A8%E3%83%AA)
+    - [Nginx - アクセスログ](#nginx---%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%83%AD%E3%82%B0)
+- [チューニング開始](#%E3%83%81%E3%83%A5%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0%E9%96%8B%E5%A7%8B)
+- [Go](#go)
+    - [Ubuntu環境にインストール　(doc)](#ubuntu%E7%92%B0%E5%A2%83%E3%81%AB%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB%E3%80%80doc)
+    - [Build](#build)
+    - [logをファイルに出力](#log%E3%82%92%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AB%E5%87%BA%E5%8A%9B)
+    - [UnixDomainSocket](#unixdomainsocket)
+- [Mysql (MariaDB)](#mysql-mariadb)
+    - [MysqlからMariaDBに乗り換える](#mysql%E3%81%8B%E3%82%89mariadb%E3%81%AB%E4%B9%97%E3%82%8A%E6%8F%9B%E3%81%88%E3%82%8B)
+    - [MariaDBを最新にする](#mariadb%E3%82%92%E6%9C%80%E6%96%B0%E3%81%AB%E3%81%99%E3%82%8B)
+    - [ユーザの作成](#%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E4%BD%9C%E6%88%90)
+    - [TroubleShoot](#troubleshoot)
+- [Nginx](#nginx)
+    - [インストール](#%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
+    - [ファイル上限を確認・拡張する](#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E4%B8%8A%E9%99%90%E3%82%92%E7%A2%BA%E8%AA%8D%E3%83%BB%E6%8B%A1%E5%BC%B5%E3%81%99%E3%82%8B)
+- [Linux](#linux)
+    - [Systemdでアプリを動かす](#systemd%E3%81%A7%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E5%8B%95%E3%81%8B%E3%81%99)
+- [Nginx](#nginx-1)
+    - [keepaliveを有効する](#keepalive%E3%82%92%E6%9C%89%E5%8A%B9%E3%81%99%E3%82%8B)
+    - [静的ファイルの配信](#%E9%9D%99%E7%9A%84%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AE%E9%85%8D%E4%BF%A1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## セットアップ
 
@@ -22,7 +47,7 @@ gh auth login # GitHub.com -> SSH -> /home/isucon/.ssh/id_rsa.pub -> Paste an au
 ```sh
 git remote add origin git@github.com:karamaru-alpha/${REPO}.git
 git branch -m master main
-git add . &&& git commit 
+git add . && git commit 
 git push -u origin main
 ```
 
@@ -30,6 +55,7 @@ git push -u origin main
 
 - VMの状態確認
 ```sh
+arch
 free -h
 fgrep 'cpu cores' /proc/cpuinfo | sort -u | sed 's/.*: //'
 systemctl list-unit-files --type=service
@@ -298,13 +324,6 @@ WantedBy = multi-user.target
 
 sudo systemctl daemon-reload
 ```
-
-
-#### アーキテクチャ確認
-```
-arch
-```
-
 
 ## Nginx
 
