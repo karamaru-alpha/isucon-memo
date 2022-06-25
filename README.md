@@ -116,3 +116,148 @@ interpolateParams=true
 ```sql
 SHOW ENGINE INNODB STATUS;
 ```
+
+
+
+## Go
+
+#### Ubuntu環境にインストール　([doc](https://go.dev/doc/install))
+```
+sudo add-apt-repository ppa:longsleep/golang-backports
+sudo apt update
+apt info golang
+sudo apt install golang (golang=1.18.0)
+```
+
+#### Build
+```
+go tool dist list
+GOOS=linux GOARCH=arm64 go build -o isucon *.go
+```
+
+#### logをファイルに出力
+
+```
+sudo touch /var/log/go.log 
+sudo chmod 777 /var/log/go.log
+```
+
+```go
+import (
+	"log"
+)
+
+func main() {
+	log.SetFlags(log.Lshortfile)
+	logfile, err := os.OpenFile("/var/log/go.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		panic("cannnot open test.log:" + err.Error())
+	}
+    defer logfile.Close()
+    log.SetOutput(logfile)
+    e.Logger.SetOutput(logfile)
+    log.Print("initialize!!!!")
+}
+```
+
+#### UnixDomainSocket
+
+cf. [karamaru-alpha/kayac-isucon-2022](https://github.com/karamaru-alpha/kayac-isucon-2022/compare/unix-domain?expand=1)
+
+## Mysql (MariaDB)
+
+#### インストール
+
+
+
+
+#### アンインストール
+```
+```
+
+```bash
+sudo apt-get remove --purge mysql-server* mysql-common
+sudo rm -r /etc/mysql
+sudo rm -r /var/lib/mysql
+sudo apt autoremove -y
+sudo apt clean
+sudo aa-remove-unknown
+```
+
+#### TroubleShoot
+
+- Unknown collation: 'utf8mb4_0900_ai_ci'
+  - sed -i 's/utf8mb4_0900_ai_ci/utf8mb4_unicode_ci/g' sql/dump.sql
+
+## Nginx
+
+#### インストール
+
+```bash
+sudo apt update
+sudo apt install nginx
+sudo ufw allow 'Nginx Full'
+sudo systemctl enable nginx
+systemctl list-unit-files --type=service
+```
+
+#### ファイル上限を確認・拡張する
+
+```bash
+ps ax | grep nginx | grep worker
+cat /proc/${PID}/limits
+
+sudo mkdir /etc/systemd/system/nginx.service.d
+
+vi /etc/systemd/system/nginx.service.d/limit.conf
+[Service]
+LimitNOFILE=32768
+
+
+systemctl daemon-reload
+systemctl restart nginx
+```
+
+## Linux
+
+#### Systemdでアプリを動かす
+
+```
+cd /etc/systemd/system
+sudo vim golang.service
+
+---
+[Unit]
+Description = isucon go servce
+
+[Service]
+ExecStart=/home/isucon/webapp/golang/isucon
+WorkingDirectory=/home/isucon/webapp/golang
+Restart=always
+Type=simple
+User=isucon
+Group=isucon
+# Other directives omitted
+# (file size)
+LimitFSIZE=infinity
+# (cpu time)
+LimitCPU=infinity
+# (virtual memory size)
+LimitAS=infinity
+# (open files)
+LimitNOFILE=64000
+# (processes/threads)
+LimitNPROC=64000
+
+[Install]
+WantedBy = multi-user.target
+---
+
+sudo systemctl daemon-reload
+```
+
+
+#### アーキテクチャ確認
+```
+arch
+```
