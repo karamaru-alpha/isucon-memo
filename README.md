@@ -5,13 +5,13 @@
 ## セットアップ
 
 - Makefileから必要ツールをダウンロード
-```
+```sh
 curl -OL https://raw.githubusercontent.com/karamaru-alpha/isucon-memo/main/Makefile
 make setup 
 ```
 
 - githubで管理するまで
-```
+```sh
 git remote add origin git@github.com:karamaru-alpha/${REPO}.git
 git branch -m master main
 git add . &&& git commit 
@@ -56,18 +56,18 @@ ORDER BY
 #### Mysql - スロークエリ
 
 - 設定ファイルをホームディレクトリに持ってくる (`mysql --help | grep my.cnf`で探せる)
-```
+```sh
 cp /etc/mysql/my.cnf my.cnf
 ```
 
 - スロークエリを吐くように[my.cnf](./etc/my.cnf)設定する
 
-```
+```sh
 sudo touch /var/log/mysql/slow-query.log
 sudo chown -R mysql /var/log/mysql/slow-query.log
 ```
 
-```
+```conf
 log_error = /var/log/mysql/error.log
 slow_query_log_file = /var/log/mysql/slow-query.log
 slow_query_log = ON
