@@ -178,22 +178,45 @@ cf. [karamaru-alpha/kayac-isucon-2022](https://github.com/karamaru-alpha/kayac-i
 
 ## Mysql (MariaDB)
 
-#### インストール
-
-
-
-
-#### アンインストール
-```
-```
+#### MysqlからMariaDBに乗り換える
 
 ```bash
+## delete
 sudo apt-get remove --purge mysql-server* mysql-common
 sudo rm -r /etc/mysql
 sudo rm -r /var/lib/mysql
 sudo apt autoremove -y
 sudo apt clean
 sudo aa-remove-unknown
+
+# install
+sudo apt install apt-transport-https
+sudo curl -LsS -O https://downloads.mariadb.com/MariaDB/mariadb_repo_setup
+sudo bash mariadb_repo_setup --mariadb-server-version=10.9
+sudo rm mariadb_repo_setup
+sudo apt update
+sudo apt install mariadb-server mariadb-common -y
+sudo mysqld --version
+```
+
+#### MariaDBを最新にする
+
+```bash
+## delete
+sudo rm -r /etc/ld.so.conf.d/mysql /etc/mysql/my.cnf /usr/local/mysql /var/log/mysql/error.log
+sudo apt purge mariadb-server
+sudo apt autoremove -y
+sudo apt clean
+sudo aa-remove-unknown
+
+# install
+sudo apt install apt-transport-https
+sudo curl -LsS -O https://downloads.mariadb.com/MariaDB/mariadb_repo_setup
+sudo bash mariadb_repo_setup --mariadb-server-version=10.9
+sudo rm mariadb_repo_setup
+sudo apt update
+sudo apt install mariadb-server -y
+sudo mysqld --version
 ```
 
 #### TroubleShoot
