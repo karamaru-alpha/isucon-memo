@@ -20,7 +20,7 @@ git push -u origin main
 
 ## 調査
 
-- VMの性能確認 
+- VMの状態確認
 ```sh
 free -h
 fgrep 'cpu cores' /proc/cpuinfo | sort -u | sed 's/.*: //'
