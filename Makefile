@@ -14,9 +14,7 @@ GO_LOG:=/var/log/go.log
 .PHONY: setup
 setup:
 	sudo apt update
-	curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-	echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-	sudo apt install -y percona-toolkit git unzip gh
+	sudo apt install -y percona-toolkit git unzip
 	git init
 	git config --global user.name karamaru-alpha
 	git config --global user.email mrnk3078@gmail.com
@@ -38,10 +36,15 @@ setup:
 	sudo sed -i -e "s/show_status_code[ \f\n\r\t]*=.*/show_status_code = false/" kataribe.toml
 	sudo sed -i -e "s/show_bytes[ \f\n\r\t]*=.*/show_bytes = false/" kataribe.toml
 	sudo sed -i -e "s/percentiles[ \f\n\r\t]*=.*/percentiles = []/" kataribe.toml
-	sudo rm README.md 2> /dev/null
-	sudo rm LICENSE 2> /dev/null
-	gh auth login
-# GitHub.com -> SSH -> /home/isucon/.ssh/id_rsa.pub -> Paste an authentication token -> https://github.com/settings/tokens
+	sudo rm -f README.md
+	sudo rm -f LICENSE
+
+# ghのインストール
+#	curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+#	echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+#	sudo apt install -y gh
+#	gh auth login
+#	GitHub.com -> SSH -> /home/isucon/.ssh/id_rsa.pub -> Paste an authentication token -> https://github.com/settings/tokens
 
 .PHONY: before
 before:
@@ -52,28 +55,16 @@ before:
 #	sudo cp my.cnf /etc/mysql/my.cnf
 #	sudo cp nginx.conf /etc/nginx/nginx.conf
 #	sudo cp $(APP).conf /etc/nginx/sites-enabled/$(APP).conf
-#	(cd go && $(GO_PATH) mod tidy)
-#	(cd go && $(GO_PATH) build -o $(APP))
-#	sudo cp /dev/null $(MYSQL_LOG)
-#	sudo cp /dev/null $(MYSQL_ERR)
-#	sudo cp /dev/null $(NGINX_LOG)
-#	sudo cp /dev/null $(NGINX_ERR)
-#	sudo cp /dev/null $(GO_LOG)
+#	(cd $(GO_PATH) && go build -o $(APP))
+#	sudo rm -f $(NGINX_LOG)
+#	sudo rm -f $(NGINX_ERR)
+#	sudo rm -f $(MYSQL_LOG)
+#	sudo rm -f $(MYSQL_ERR)
+#	sudo rm -f $(GO_LOG)
 #	sudo systemctl restart nginx
 #	sudo systemctl restart mysql
 #	sudo systemctl restart $(APP).go.service
 
-.PHONY: before-db
-before-db:
-	git stash
-	git pull origin main
-	sudo cp my.cnf /etc/mysql/my.cnf
-	sudo rm $(MYSQL_LOG) 2> /dev/null
-	sudo touch $(MYSQL_LOG)
-	sudo chown -R mysql $(MYSQL_LOG)
-	sudo systemctl restart mysql
-	sudo systemctl stop nginx
-	sudo systemctl stop $(APP).go.service
 
 .PHONY: slow
 slow:

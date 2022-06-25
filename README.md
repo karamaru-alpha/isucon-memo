@@ -10,6 +10,14 @@ curl -OL https://raw.githubusercontent.com/karamaru-alpha/isucon-memo/main/Makef
 make setup 
 ```
 
+- ghのインストール 
+```
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt install -y gh
+gh auth login # GitHub.com -> SSH -> /home/isucon/.ssh/id_rsa.pub -> Paste an authentication token -> https://github.com/settings/tokens
+```
+
 - githubで管理するまで
 ```sh
 git remote add origin git@github.com:karamaru-alpha/${REPO}.git
@@ -93,7 +101,9 @@ cp /etc/nginx/sites-enabled/$(APP).conf $(APP)
 - アクセスログを吐くようにnginx.confを設定する
 ```
 sudo touch /var/log/nginx/access.log
-sudo chown -R nginx /var/log/nginx/access.log
+sudo touch /var/log/nginx/error.log
+sudo chown 777 /var/log/nginx/access.log
+sudo chown 777 /var/log/nginx/error.log
 ```
 
 ```
@@ -104,13 +114,6 @@ http {
     access_log /var/log/nginx/access.log with_time;
 }
 ```
-
-#### GithubCliで自動解析する
-
-```
-./analyze.sh 初期実装 100
-```
-
 
 ## チューニング開始
 
@@ -127,8 +130,6 @@ interpolateParams=true
 ```sql
 SHOW ENGINE INNODB STATUS;
 ```
-
-
 
 ## Go
 
