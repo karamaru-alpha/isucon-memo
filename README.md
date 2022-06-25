@@ -219,6 +219,14 @@ sudo apt install mariadb-server -y
 sudo mysqld --version
 ```
 
+#### ユーザの作成
+```sql
+DROP USER 'isucon'@'localhost';
+CREATE USER 'isucon'@'localhost' IDENTIFIED BY 'isucon';
+GRANT ALL PRIVILEGES ON * . * TO 'isucon'@'localhost';
+FLUSH PRIVILEGES;
+```
+
 #### TroubleShoot
 
 - Unknown collation: 'utf8mb4_0900_ai_ci'
