@@ -102,8 +102,8 @@ cp /etc/nginx/sites-enabled/$(APP).conf $(APP)
 ```
 sudo touch /var/log/nginx/access.log
 sudo touch /var/log/nginx/error.log
-sudo chown 777 /var/log/nginx/access.log
-sudo chown 777 /var/log/nginx/error.log
+sudo chmod 777 /var/log/nginx/access.log
+sudo chmod 777 /var/log/nginx/error.log
 ```
 
 ```
