@@ -5,17 +5,27 @@
 - [調査](#%E8%AA%BF%E6%9F%BB)
     - [Mysql - スロークエリ](#mysql---%E3%82%B9%E3%83%AD%E3%83%BC%E3%82%AF%E3%82%A8%E3%83%AA)
     - [Nginx - アクセスログ](#nginx---%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%83%AD%E3%82%B0)
-- [チューニング開始](#%E3%83%81%E3%83%A5%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0%E9%96%8B%E5%A7%8B)
 - [Go](#go)
     - [Ubuntu環境にインストール　(doc)](#ubuntu%E7%92%B0%E5%A2%83%E3%81%AB%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB%E3%80%80doc)
     - [Build](#build)
     - [logをファイルに出力](#log%E3%82%92%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AB%E5%87%BA%E5%8A%9B)
     - [UnixDomainSocket](#unixdomainsocket)
+    - [SingleFlight](#singleflight)
+    - [httpを広げる](#http%E3%82%92%E5%BA%83%E3%81%92%E3%82%8B)
+    - [シリアライザを切り替える](#%E3%82%B7%E3%83%AA%E3%82%A2%E3%83%A9%E3%82%A4%E3%82%B6%E3%82%92%E5%88%87%E3%82%8A%E6%9B%BF%E3%81%88%E3%82%8B)
+    - [オンメモリ戦略](#%E3%82%AA%E3%83%B3%E3%83%A1%E3%83%A2%E3%83%AA%E6%88%A6%E7%95%A5)
+    - [画像をfileで読み書き](#%E7%94%BB%E5%83%8F%E3%82%92file%E3%81%A7%E8%AA%AD%E3%81%BF%E6%9B%B8%E3%81%8D)
+    - [一定時間毎に処理をする](#%E4%B8%80%E5%AE%9A%E6%99%82%E9%96%93%E6%AF%8E%E3%81%AB%E5%87%A6%E7%90%86%E3%82%92%E3%81%99%E3%82%8B)
 - [Mysql (MariaDB)](#mysql-mariadb)
     - [MysqlからMariaDBに乗り換える](#mysql%E3%81%8B%E3%82%89mariadb%E3%81%AB%E4%B9%97%E3%82%8A%E6%8F%9B%E3%81%88%E3%82%8B)
     - [MariaDBを最新にする](#mariadb%E3%82%92%E6%9C%80%E6%96%B0%E3%81%AB%E3%81%99%E3%82%8B)
     - [ユーザの作成](#%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E4%BD%9C%E6%88%90)
+    - [デッドロックの調査](#%E3%83%87%E3%83%83%E3%83%89%E3%83%AD%E3%83%83%E3%82%AF%E3%81%AE%E8%AA%BF%E6%9F%BB)
     - [TroubleShoot](#troubleshoot)
+    - [Mysqlの起動を待つ](#mysql%E3%81%AE%E8%B5%B7%E5%8B%95%E3%82%92%E5%BE%85%E3%81%A4)
+    - [bulkInsert](#bulkinsert)
+    - [IN句](#in%E5%8F%A5)
+    - [コネクションプール](#%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%83%97%E3%83%BC%E3%83%AB)
 - [Nginx](#nginx)
     - [インストール](#%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
     - [ファイル上限を確認・拡張する](#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E4%B8%8A%E9%99%90%E3%82%92%E7%A2%BA%E8%AA%8D%E3%83%BB%E6%8B%A1%E5%BC%B5%E3%81%99%E3%82%8B)
@@ -139,23 +149,8 @@ http {
                  '"$http_referer" "$http_user_agent" $request_time';
     access_log /var/log/nginx/access.log with_time;
 }
-```
+``` 
 
-## チューニング開始
-
-- index貼る
-- LIMITつける
-- app側でPrepareする
-
-```
-interpolateParams=true
-```
-                           
-
-- deadlock
-```sql
-SHOW ENGINE INNODB STATUS;
-```
 
 ## Go
 
@@ -201,6 +196,300 @@ func main() {
 #### UnixDomainSocket
 
 cf. [karamaru-alpha/kayac-isucon-2022](https://github.com/karamaru-alpha/kayac-isucon-2022/compare/unix-domain?expand=1)
+
+
+#### SingleFlight
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+
+	"golang.org/x/sync/singleflight"
+)
+
+var group singleflight.Group
+
+func callAPI(name string) {
+	//　同一 name が処理中なら一緒に結果を待つ
+	v, err, shared := group.Do(name, func() (interface{}, error) {
+		// 時間がかかる処理
+		return time.Now(), nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("結果:", v, ", 重複が発生したか:", shared)
+}
+
+func main() {
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			callAPI("work")
+		}()
+		<-time.After(time.Millisecond)
+	}
+	wg.Wait()
+}
+```
+
+#### httpを広げる
+
+```go
+func main() {
+  http.DefaultTransport.(*http.Transport).MaxIdleConns = 0
+  http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 1024
+  http.DefaultTransport.(*http.Transport).ForceAttemptHTTP2 = true
+}
+```
+
+#### シリアライザを切り替える
+
+- goccy/go-json
+```go
+import (
+    "github.com/goccy/go-json"
+    "github.com/labstack/echo/v4"
+)
+
+type JSONSerializer struct{}
+
+func (j *JSONSerializer) Serialize(c echo.Context, i interface{}, indent string) error {
+    enc := json.NewEncoder(c.Response())
+    return enc.Encode(i)
+}
+
+func (j *JSONSerializer) Deserialize(c echo.Context, i interface{}) error {
+    err := json.NewDecoder(c.Request().Body).Decode(i)
+    if ute, ok := err.(*json.UnmarshalTypeError); ok {
+        return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unmarshal type error: expected=%v, got=%v, field=%v, offset=%v", ute.Type, ute.Value, ute.Field, ute.Offset)).SetInternal(err)
+    } else if se, ok := err.(*json.SyntaxError); ok {
+        return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Syntax error: offset=%v, error=%v", se.Offset, se.Error())).SetInternal(err)
+    }
+    return err
+}
+
+func main() {
+    e := echo.New()
+    e.JSONSerializer = &JSONSerializer{}
+}
+```
+
+- bytedance/sonic
+```go
+import (
+    "github.com/bytedance/sonic/decoder"
+    "github.com/bytedance/sonic/encoder"
+    "github.com/labstack/echo/v4"
+)
+
+type JSONSerializer struct{}
+
+func (j *JSONSerializer) Serialize(c echo.Context, i interface{}, indent string) error {
+    buf, err := encoder.Encode(i, 0)
+    if err != nil {
+        return err
+    }
+    _, err = c.Response().Write(buf)
+    return err
+}
+
+func (j *JSONSerializer) Deserialize(c echo.Context, i interface{}) error {
+    buf := new(bytes.Buffer)
+    buf.ReadFrom(c.Request().Body)
+    err := decoder.NewDecoder(buf.String()).Decode(i)
+    if ute, ok := err.(*json.UnmarshalTypeError); ok {
+        return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unmarshal type error: expected=%v, got=%v, field=%v, offset=%v", ute.Type, ute.Value, ute.Field, ute.Offset)).SetInternal(err)
+    } else if se, ok := err.(*json.SyntaxError); ok {
+        return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Syntax error: offset=%v, error=%v", se.Offset, se.Error())).SetInternal(err)
+    }
+    return err
+}
+
+func main() {
+    e := echo.New()
+    e.JSONSerializer = &JSONSerializer{}
+}
+```
+
+#### オンメモリ戦略
+
+- map1:1
+```go
+type omIsuT struct {
+  M sync.RWMutex
+  V map[string]*Isu
+}
+
+var omIsu omIsuT
+
+func (o *omIsuT) Get(k string) (*Isu, bool) {
+  o.M.RLock()
+  v, ok := o.V[k]
+  o.M.RUnlock()
+  return v, ok
+}
+
+func (o *omIsuT) Set(v Isu) {
+  o.M.Lock()
+  o.V[v.ID] = v
+  o.M.Unlock()
+}
+
+func main() {
+  omIsu = omIsuT{
+    V: map[string]&Isu{}
+  }
+} 
+```
+
+- map1:N
+
+```go
+type omIsuListT struct {
+	M sync.RWMutex
+	V map[string][]*Isu
+}
+
+var omIsuList omIsuListT
+
+func (o *omIsuListT) Get(k string) ([]*Isu, bool) {
+	o.M.RLock()
+	v, ok := o.V[k]
+	o.M.RUnlock()
+	return v, ok
+}
+
+func (o *omIsuListT) Set(k string, v []*Isu) {
+	o.M.Lock()
+	o.V[k] = append(o.V[k], v...)
+	o.M.Unlock()
+}
+
+func main() {
+	omIsuList = omIsuListT{
+		V: map[string][]&Isu{} // make(map[string][]Isu, len(hogehoge))
+	}
+}
+```
+
+- slice
+
+```go
+type omIsuListT struct {
+	M sync.RWMutex
+	V []*Isu
+}
+
+var omIsuList omIsuListT
+
+func (o *omIsuListT) Get() ([]*Isu) {
+	o.M.RLock()
+	defer o.M.RUnlock()
+	return o.V
+}
+
+func (o *omIsuListT) Set(v []*Isu) {
+	o.M.Lock()
+	o.V = append(o.V, v...)
+	o.M.Unlock()
+}
+
+func main() {
+	omIsuList = omIsuListT{}
+}
+```
+
+- slice期限付き
+
+```go
+type omIsuListT struct {
+	M sync.RWMutex
+	T time.Time
+	V []*Isu
+}
+
+var omIsuList omIsuListT
+
+func (o *omIsuListT) Get(k string) ([]*Isu, bool) {
+	o.M.RLock()
+	defer o.M.RUnlock()
+	if o.T.After(time.Now()) {
+		return o.V, true
+	}
+	return nil, false
+}
+
+// 完全置換+期限伸ばす
+func (o *omIsuListT) Set(v []*Isu) {
+	o.M.Lock()
+	o.T = time.Now().Add(time.Second * 1) // キャッシュ時間
+	o.V = v
+	o.M.Unlock()
+}
+
+func main() {
+	omIsuList = omIsuListT{
+		T: time.Now(),
+	}
+}
+```
+
+#### 画像をfileで読み書き
+
+```go
+// init 時の掃除&ディレクトリ設置
+func initialize() {
+	if err = os.RemoveAll(iconFilePath); err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	if err := os.MkdirAll(iconFilePath, os.ModePerm); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+}
+
+// 書き込み
+func write() {
+	for _, v := range isuImages {
+		if err := os.WriteFile(fmt.Sprintf("%s/%s_%s", iconFilePath, v.JIAUserID, v.JIAIsuUUID), v.Image, os.ModePerm); err != nil {
+			c.Logger().Error(err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	}
+}
+
+// 読み込み
+func read() {
+	image, err := os.ReadFile(fmt.Sprintf("%s/%s_%s", iconFilePath, jiaUserID, jiaIsuUUID))
+}
+
+// コピー(読み込みより早い)
+func copy() {
+	file, err := os.Open(defaultIconFilePath)
+	defer file.Close()
+
+	f, err := os.Create(fmt.Sprintf("%s/%s_%s", iconFilePath, jiaUserID, jiaIsuUUID))
+	defer f.Close()
+
+	_, err = io.Copy(f, file)
+}
+```
+
+#### 一定時間毎に処理をする
+
+```go
+func loop() {
+	for range time.Tick(time.Second) {
+		// something to do
+	}
+}
+```
 
 ## Mysql (MariaDB)
 
@@ -253,10 +542,80 @@ GRANT ALL PRIVILEGES ON * . * TO 'isucon'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
+#### デッドロックの調査
+```sql
+SHOW ENGINE INNODB STATUS;
+```
+
 #### TroubleShoot
 
 - Unknown collation: 'utf8mb4_0900_ai_ci'
   - sed -i 's/utf8mb4_0900_ai_ci/utf8mb4_unicode_ci/g' sql/dump.sql
+
+#### Mysqlの起動を待つ
+
+```go
+func main() {
+	// db.Open　の直後
+	for {
+		err := db.Ping()
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second * 1)
+	}
+}
+```
+
+#### bulkInsert
+
+```go
+func bulkInsert(isuList []Isu) {
+	args := make([]interface{}, 0, len(isuList)*3)
+	placeHolders := &strings.Builder{}
+	for i, v := range isuList {
+		args = append(args, v.Col1, v.Col2, v.Col3)
+		if i == 0 {
+			placeHolders.WriteString(" (?, ?, ?)")
+		} else {
+			placeHolders.WriteString(",(?, ?, ?)")
+		}
+	}
+	_, err = db.Exec("INSERT INTO table_name(col_1, col_2, col_3) VALUES" + placeHolders.String(), args...)
+}
+```
+
+#### IN句
+
+```go
+type Isu struct {
+	Col1 int `db:"col_1"`
+	Col2 int `db:"col_2"`
+	Col3 int `db:"col_3"`
+}
+
+// Col1の値を複数条件で検索
+func in(col1s []int)　[]Isu {
+	var isuList []Isu
+	inPlaceHolders := "col_1 IN (?" + strings.Repeat(",?", len(levels)-1) + ")" // n=0の時がある場合は分岐が必要
+	db.Select(&isuList, `SELECT * FROM isu WHERE ` + inPlaceHolders, col1s...)
+}
+```
+
+#### コネクションプール
+
+```go
+func main() {
+	const SQL_CONN_COUNT = 20
+	// 最大接続数
+	db.SetMaxOpenConns(SQL_CONN_COUNT)
+	// プールできるコネクションの数
+	db.SetMaxIdleConns(SQL_CONN_COUNT)
+	// 接続が確立されてからコネクションを保持できる最大時間
+	db.SetConnMaxLifetime(SQL_CONN_COUNT * time.Second)
+	defer db.Close()
+}
+```
 
 ## Nginx
 
