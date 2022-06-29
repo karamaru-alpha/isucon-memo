@@ -16,6 +16,7 @@
     - [オンメモリ戦略](#%E3%82%AA%E3%83%B3%E3%83%A1%E3%83%A2%E3%83%AA%E6%88%A6%E7%95%A5)
     - [画像をfileで読み書き](#%E7%94%BB%E5%83%8F%E3%82%92file%E3%81%A7%E8%AA%AD%E3%81%BF%E6%9B%B8%E3%81%8D)
     - [一定時間毎に処理をする](#%E4%B8%80%E5%AE%9A%E6%99%82%E9%96%93%E6%AF%8E%E3%81%AB%E5%87%A6%E7%90%86%E3%82%92%E3%81%99%E3%82%8B)
+    - [UnixDomainSocket](#unixdomainsocket-1)
 - [Mysql (MariaDB)](#mysql-mariadb)
     - [MysqlからMariaDBに乗り換える](#mysql%E3%81%8B%E3%82%89mariadb%E3%81%AB%E4%B9%97%E3%82%8A%E6%8F%9B%E3%81%88%E3%82%8B)
     - [MariaDBを最新にする](#mariadb%E3%82%92%E6%9C%80%E6%96%B0%E3%81%AB%E3%81%99%E3%82%8B)
@@ -26,9 +27,19 @@
     - [bulkInsert](#bulkinsert)
     - [IN句](#in%E5%8F%A5)
     - [コネクションプール](#%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%83%97%E3%83%BC%E3%83%AB)
+    - [DBの起動を待つ](#db%E3%81%AE%E8%B5%B7%E5%8B%95%E3%82%92%E5%BE%85%E3%81%A4)
+    - [外部からのアクセスを許容する](#%E5%A4%96%E9%83%A8%E3%81%8B%E3%82%89%E3%81%AE%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%82%92%E8%A8%B1%E5%AE%B9%E3%81%99%E3%82%8B)
+    - [generatedColumns](#generatedcolumns)
+    - [1byte長の半角文字列をピッタリ格納する](#1byte%E9%95%B7%E3%81%AE%E5%8D%8A%E8%A7%92%E6%96%87%E5%AD%97%E5%88%97%E3%82%92%E3%83%94%E3%83%83%E3%82%BF%E3%83%AA%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
+    - [UUIDをBINARY(16)で格納する](#uuid%E3%82%92binary16%E3%81%A7%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
 - [Nginx](#nginx)
     - [インストール](#%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
     - [ファイル上限を確認・拡張する](#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E4%B8%8A%E9%99%90%E3%82%92%E7%A2%BA%E8%AA%8D%E3%83%BB%E6%8B%A1%E5%BC%B5%E3%81%99%E3%82%8B)
+    - [静的ファイルのクライアントキャッシュ](#%E9%9D%99%E7%9A%84%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AE%E3%82%AF%E3%83%A9%E3%82%A4%E3%82%A2%E3%83%B3%E3%83%88%E3%82%AD%E3%83%A3%E3%83%83%E3%82%B7%E3%83%A5)
+    - [レスポンスキャッシュ(ProxyCache)](#%E3%83%AC%E3%82%B9%E3%83%9D%E3%83%B3%E3%82%B9%E3%82%AD%E3%83%A3%E3%83%83%E3%82%B7%E3%83%A5proxycache)
+    - [認証付きの静的配信(X-Accel-Redirect)](#%E8%AA%8D%E8%A8%BC%E4%BB%98%E3%81%8D%E3%81%AE%E9%9D%99%E7%9A%84%E9%85%8D%E4%BF%A1x-accel-redirect)
+    - [リクエストメソッドで処理を出し分ける](#%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%A1%E3%82%BD%E3%83%83%E3%83%89%E3%81%A7%E5%87%A6%E7%90%86%E3%82%92%E5%87%BA%E3%81%97%E5%88%86%E3%81%91%E3%82%8B)
+    - [Botからのリクエストを拒否](#bot%E3%81%8B%E3%82%89%E3%81%AE%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%82%92%E6%8B%92%E5%90%A6)
 - [Linux](#linux)
     - [Systemdでアプリを動かす](#systemd%E3%81%A7%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E5%8B%95%E3%81%8B%E3%81%99)
 - [Nginx](#nginx-1)
@@ -72,7 +83,6 @@ systemctl list-unit-files --type=service
 ```
 
 - DBのバージョンとスキーマの確認
-
 ```sh
 mysql --version
 ```
@@ -213,7 +223,7 @@ import (
 
 var group singleflight.Group
 
-func callAPI(name string) {
+func call(name string) {
 	//　同一 name が処理中なら一緒に結果を待つ
 	v, err, shared := group.Do(name, func() (interface{}, error) {
 		// 時間がかかる処理
@@ -223,19 +233,6 @@ func callAPI(name string) {
 		log.Fatal(err)
 	}
 	log.Println("結果:", v, ", 重複が発生したか:", shared)
-}
-
-func main() {
-	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			callAPI("work")
-		}()
-		<-time.After(time.Millisecond)
-	}
-	wg.Wait()
 }
 ```
 
@@ -491,6 +488,54 @@ func loop() {
 }
 ```
 
+#### UnixDomainSocket
+
+```go
+func main() {
+    listener, err := net.Listen("unix", "/run/webapp.sock")
+    if err != nil {
+        e.Logger.Fatalf("failed to init unix domain socket. err:%v", err)
+        return
+    }
+    defer func() {
+        if err := listener.Close(); err != nil {
+            e.Logger.Fatalf("failed to init unix domain socket close. err:%v", err)
+            return
+        }
+    }()
+
+    c := make(chan os.Signal, 2)
+    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+    go func() {
+        <-c
+        if err := listener.Close(); err != nil {
+            e.Logger.Fatalf("failed to init unix domain socket close. err:%v", err)
+            return
+        }
+    }()
+    e.Listener = listener
+    e.Logger.Info("starting server on unix domain socket...")
+    server := new(http.Server)
+    if err := e.StartServer(server); err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+```conf
+upstream s1 {
+  server sock:/run/webapp.sock;
+  keepalive 32;
+  keepalive_requests 10000;
+}
+
+location /api {
+  proxy_http_version 1.1;
+  proxy_set_header Connection "";
+  proxy_pass   http://s1;
+}
+```
+
 ## Mysql (MariaDB)
 
 #### MysqlからMariaDBに乗り換える
@@ -536,6 +581,7 @@ sudo mysqld --version
 
 #### ユーザの作成
 ```sql
+SELECT user, host FROM mysql.user;
 DROP USER 'isucon'@'localhost';
 CREATE USER 'isucon'@'localhost' IDENTIFIED BY 'isucon';
 GRANT ALL PRIVILEGES ON * . * TO 'isucon'@'localhost';
@@ -600,6 +646,9 @@ func in(col1s []int)　[]Isu {
 	inPlaceHolders := "col_1 IN (?" + strings.Repeat(",?", len(levels)-1) + ")" // n=0の時がある場合は分岐が必要
 	db.Select(&isuList, `SELECT * FROM isu WHERE ` + inPlaceHolders, col1s...)
 }
+
+// sqlxの場合
+// sqlx.In(`SELECT * FROM users WHERE id IN (?)`, []int{1,2}) 
 ```
 
 #### コネクションプール
@@ -614,6 +663,89 @@ func main() {
 	// 接続が確立されてからコネクションを保持できる最大時間
 	db.SetConnMaxLifetime(SQL_CONN_COUNT * time.Second)
 	defer db.Close()
+}
+```
+
+#### DBの起動を待つ
+
+```go
+func main() {
+	db := openDB()
+	for {
+        if err := db.Ping(); err == nil {
+            break
+        }
+        time.Sleep(time.Second * 1)
+    }
+```
+
+#### 外部からのアクセスを許容する
+
+```sh
+# MariaDBの場合
+sudo sed -i -e "s/bind-address[ \f\n\r\t]*=[ \f\n\r\t]*127.0.0.1/bind-address = 0.0.0.0/" /etc/mysql/mariadb.conf.d/50-server.cnf
+```
+
+#### generatedColumns
+
+```sql
+popularity INT NOT NULL,
+popularity_desc INT AS (-popularity) INVISIBLE, -- index 使う時は STORED
+```
+
+
+#### 1byte長の半角文字列をピッタリ格納する
+
+```sql
+`id` CHAR(26) CHARACTER SET latin1,
+```
+
+
+#### UUIDをBINARY(16)で格納する
+
+```sql
+-- 2_Patch.sql
+DROP FUNCTION IF EXISTS UUID_TO_BIN;
+
+CREATE FUNCTION UUID_TO_BIN(_uuid BINARY(36)) RETURNS BINARY(16) LANGUAGE SQL DETERMINISTIC CONTAINS SQL SQL SECURITY INVOKER RETURN UNHEX(
+  CONCAT(
+    SUBSTR(_uuid, 15, 4),
+    SUBSTR(_uuid, 10, 4),
+    SUBSTR(_uuid, 1, 8),
+    SUBSTR(_uuid, 20, 4),
+    SUBSTR(_uuid, 25)
+  )
+);
+
+DROP FUNCTION IF EXISTS BIN_TO_UUID;
+
+CREATE FUNCTION BIN_TO_UUID(_bin BINARY(16)) RETURNS BINARY(36) LANGUAGE SQL DETERMINISTIC CONTAINS SQL SQL SECURITY INVOKER RETURN LCASE(
+  CONCAT_WS(
+    '-',
+    HEX(SUBSTR(_bin, 5, 4)),
+    HEX(SUBSTR(_bin, 3, 2)),
+    HEX(SUBSTR(_bin, 1, 2)),
+    HEX(SUBSTR(_bin, 9, 2)),
+    HEX(SUBSTR(_bin, 11))
+  )
+);
+
+ALTER TABLE user ADD COLUMN bin_uuid BINARY(16);
+
+UPDATE user SET bin_uuid = UUID_TO_BIN(uuid);
+
+-- uuid が PK の場合: ALTER TABLE user DROP PRIMARY KEY, ADD PRIMARY KEY (`bin_uuid`);
+
+ALTER TABLE user DROP COLUMN uuid;
+
+ALTER TABLE user RENAME COLUMN bin_uuid TO uuid;
+
+-- NOT NULL などの制約があった場合は付け直す: ALTER TABLE user MODIFY COLUMN uuid BINARY(16) NOT NULL UNIQUE;
+```
+```go
+func get(uuid string) {
+	var user User
+	db.Get(&user, "SELECT BIN_TO_UUID(`uuid`) FROM user WHERE uuid = UUID_TO_BIN(?)", uuid)
 }
 ```
 
@@ -644,6 +776,115 @@ LimitNOFILE=32768
 
 systemctl daemon-reload
 systemctl restart nginx
+```
+
+#### 静的ファイルのクライアントキャッシュ
+
+```conf
+location /assets/ {
+    expires 1d;
+    try_files $uri /;
+  }
+```
+
+#### レスポンスキャッシュ(ProxyCache)
+
+```conf
+http {
+    # キャッシュ先のファイル指定・2階層で保存・zone1キー名で1M確保・1ギガまで使う・2分で削除
+    proxy_cache_path /var/cache/nginx/cache levels=1:2 keys_zone=zone1:1m max_size=1g inactive=2m;
+    proxy_temp_path  /var/cache/nginx/tmp;
+
+    location /path/to {
+	    proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            proxy_cache zone1;
+            proxy_cache_valid 200 302 2m;
+            # proxy_cache_key $scheme$proxy_host$uri$is_args$args;
+            proxy_pass http://s1;
+    }
+}
+```
+
+```sh
+sudo mkdir -p /var/cache/nginx/cache
+sudo mkdir -p /var/cache/nginx/tmp
+sudo chown nginx /var/cache/nginx/cache
+sudo chown nginx /var/cache/nginx/tmp
+```
+
+
+#### 認証付きの静的配信(X-Accel-Redirect)
+
+```go
+func getIsuIcon(c echo.Context) error {
+	// 認証してから
+	// ↓必要であれば存在チェック
+	// if _, err := os.Stat(fmt.Sprintf("%s/%s_%s", iconFilePath, jiaUserID, jiaIsuUUID)); err != nil {
+	// 	return c.String(http.StatusNotFound, "not found: isu")
+	// }
+	c.Response().Header().Set("X-Accel-Redirect", fmt.Sprintf("/icon/%s_%s", jiaUserID, jiaIsuUUID))
+	return c.NoContent(http.StatusOK)
+}
+```
+
+```conf
+# ここにリクエストが来て -> app
+location ^~ /api/isu/(.*)/icon {
+    expires 1d;
+    add_header cache-control public;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_pass http://app;
+}
+
+# ここでaccel-redirect <- app
+location /icon/ {
+    internal;
+    alias /home/isucon/webapp/icons/;
+    expires 1d;
+    add_header cache-control public;
+}
+```
+
+#### リクエストメソッドで処理を出し分ける
+
+```conf
+location = /path/to {
+    if ($request_method = GET) {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_pass http://app1;
+        break;
+    }
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_pass http://app2;
+}
+```
+
+#### Botからのリクエストを拒否
+
+```conf
+map $http_user_agent $bot {
+    default 0;
+    "~ISUCONbot" 1;
+    "~Mediapartners-ISUCON" 1;
+    "~ISUCONCoffee" 1;
+    "~ISUCONFeedSeeker" 1;
+    "~crawler \(https://isucon\.invalid/(support/faq/|help/jp/)" 1;
+    "~isubot" 1;
+    "~Isupider" 1;
+    "~*(bot|crawler|spider)(?:[-_ .\/;@()]|$)" 1;
+}
+
+server {
+    root /home/isucon/isucon10-qualify/webapp/public;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    if ($bot = 1) { return 503; }
+}
 ```
 
 ## Linux
