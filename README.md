@@ -926,7 +926,9 @@ Restart=always
 Type=simple
 User=isucon
 Group=isucon
-# Other directives omitted
+
+# EnvironmentFile=/etc/sysconfig/webapp
+
 # (file size)
 LimitFSIZE=infinity
 # (cpu time)
