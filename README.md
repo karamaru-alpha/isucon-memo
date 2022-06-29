@@ -9,14 +9,13 @@
     - [Ubuntu環境にインストール](#ubuntu%E7%92%B0%E5%A2%83%E3%81%AB%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
     - [Build](#build)
     - [logをファイルに出力](#log%E3%82%92%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AB%E5%87%BA%E5%8A%9B)
-    - [UnixDomainSocket](#unixdomainsocket)
     - [SingleFlight](#singleflight)
     - [httpを広げる](#http%E3%82%92%E5%BA%83%E3%81%92%E3%82%8B)
     - [シリアライザを切り替える](#%E3%82%B7%E3%83%AA%E3%82%A2%E3%83%A9%E3%82%A4%E3%82%B6%E3%82%92%E5%88%87%E3%82%8A%E6%9B%BF%E3%81%88%E3%82%8B)
     - [オンメモリ戦略](#%E3%82%AA%E3%83%B3%E3%83%A1%E3%83%A2%E3%83%AA%E6%88%A6%E7%95%A5)
     - [画像をfileで読み書き](#%E7%94%BB%E5%83%8F%E3%82%92file%E3%81%A7%E8%AA%AD%E3%81%BF%E6%9B%B8%E3%81%8D)
     - [一定時間毎に処理をする](#%E4%B8%80%E5%AE%9A%E6%99%82%E9%96%93%E6%AF%8E%E3%81%AB%E5%87%A6%E7%90%86%E3%82%92%E3%81%99%E3%82%8B)
-    - [UnixDomainSocket](#unixdomainsocket-1)
+    - [UnixDomainSocket](#unixdomainsocket)
 - [Mysql (MariaDB)](#mysql-mariadb)
     - [MysqlからMariaDBに乗り換える](#mysql%E3%81%8B%E3%82%89mariadb%E3%81%AB%E4%B9%97%E3%82%8A%E6%8F%9B%E3%81%88%E3%82%8B)
     - [MariaDBを最新にする](#mariadb%E3%82%92%E6%9C%80%E6%96%B0%E3%81%AB%E3%81%99%E3%82%8B)
@@ -202,11 +201,6 @@ func main() {
     log.Print("initialize!!!!")
 }
 ```
-
-#### UnixDomainSocket
-
-cf. [karamaru-alpha/kayac-isucon-2022](https://github.com/karamaru-alpha/kayac-isucon-2022/compare/unix-domain?expand=1)
-
 
 #### SingleFlight
 
