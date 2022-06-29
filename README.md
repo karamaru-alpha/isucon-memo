@@ -34,6 +34,7 @@
     - [UUIDをBINARY(16)で格納する](#uuid%E3%82%92binary16%E3%81%A7%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
 - [Nginx](#nginx)
     - [インストール](#%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
+    - [keepaliveを有効する](#keepalive%E3%82%92%E6%9C%89%E5%8A%B9%E3%81%99%E3%82%8B)
     - [ファイル上限を確認・拡張する](#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E4%B8%8A%E9%99%90%E3%82%92%E7%A2%BA%E8%AA%8D%E3%83%BB%E6%8B%A1%E5%BC%B5%E3%81%99%E3%82%8B)
     - [静的ファイルのクライアントキャッシュ](#%E9%9D%99%E7%9A%84%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AE%E3%82%AF%E3%83%A9%E3%82%A4%E3%82%A2%E3%83%B3%E3%83%88%E3%82%AD%E3%83%A3%E3%83%83%E3%82%B7%E3%83%A5)
     - [レスポンスキャッシュ(ProxyCache)](#%E3%83%AC%E3%82%B9%E3%83%9D%E3%83%B3%E3%82%B9%E3%82%AD%E3%83%A3%E3%83%83%E3%82%B7%E3%83%A5proxycache)
@@ -42,9 +43,6 @@
     - [Botからのリクエストを拒否](#bot%E3%81%8B%E3%82%89%E3%81%AE%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%82%92%E6%8B%92%E5%90%A6)
 - [Linux](#linux)
     - [Systemdでアプリを動かす](#systemd%E3%81%A7%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E5%8B%95%E3%81%8B%E3%81%99)
-- [Nginx](#nginx-1)
-    - [keepaliveを有効する](#keepalive%E3%82%92%E6%9C%89%E5%8A%B9%E3%81%99%E3%82%8B)
-    - [静的ファイルの配信](#%E9%9D%99%E7%9A%84%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AE%E9%85%8D%E4%BF%A1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -763,6 +761,26 @@ sudo systemctl enable nginx
 systemctl list-unit-files --type=service
 ```
 
+#### keepaliveを有効する
+
+HTTP/1.1を使用する&Connectionヘッダを空にする必要がある
+```conf
+upstream s1 {
+  server 127.0.0.1:3000;
+  keepalive 32;
+  keepalive_requests 10000;
+}
+server {
+  listen 80;
+  root /public/;
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_pass http://s1;
+  }
+}
+```
+
 #### ファイル上限を確認・拡張する
 
 ```bash
@@ -925,45 +943,4 @@ WantedBy = multi-user.target
 ---
 
 sudo systemctl daemon-reload
-```
-
-## Nginx
-
-#### keepaliveを有効する
-
-HTTP/1.1を使用する&Connectionヘッダを空にする必要がある
-```conf
-upstream app {
-  server 127.0.0.1:3000;
-  keepalive 32;
-  keepalive_requests 10000;
-}
-server {
-  listen 80;
-  root /public/;
-  location / {
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
-    proxy_pass http://app;
-  }
-}
-```
-
-#### 静的ファイルの配信
-
-```conf
-server {
-  listen 80;
-
-  root /public/;
-
-  location / {
-    proxy_pass http://127.0.0.1:3000;
-  }
-
-  location /assets/ {
-    try_files $uri /;
-    expires 1d;
-  }
-}
 ```
