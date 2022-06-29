@@ -757,7 +757,7 @@ INSERT INTO `user` (`id`) VALUES (?) ON DUPLICATE KEY UPDATE `name`=?;
 #### trigger
 
 ```sql
-create trigger playlist_favorite_insert_trigger before insert on playlist_favorite for each row insert into playlist_favorite_count (playlist_id,count) values (NEW.playlist_id, 1) on duplicate key update playlist_favorite_count.count = playlist_favorite_count.count + 1;
+CREATE TRIGGER playlist_favorite_insert_trigger BEFORE INSERT ON playlist_favorite FOR EACH ROW INSERT INTO playlist_favorite_count (playlist_id,count) values (NEW.playlist_id, 1) ON DUPLICATE KEY UPDATE playlist_favorite_count.count = playlist_favorite_count.count + 1;
 ```
 
 ## Nginx
