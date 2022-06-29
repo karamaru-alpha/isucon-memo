@@ -642,7 +642,8 @@ func in(col1s []int)　[]Isu {
 }
 
 // sqlxの場合
-// sqlx.In(`SELECT * FROM users WHERE id IN (?)`, []int{1,2}) 
+// query, params, err := sqlx.In(`SELECT * FROM users WHERE id IN (?)`, []int{1,2})
+// db.Select(&isuList, db.Rebind(query), params...)
 ```
 
 #### コネクションプール
