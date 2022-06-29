@@ -3,6 +3,8 @@
 
 - [セットアップ](#%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97)
 - [調査](#%E8%AA%BF%E6%9F%BB)
+    - [VMの状態確認](#vm%E3%81%AE%E7%8A%B6%E6%85%8B%E7%A2%BA%E8%AA%8D)
+    - [DBのバージョンとスキーマの確認](#db%E3%81%AE%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E3%81%A8%E3%82%B9%E3%82%AD%E3%83%BC%E3%83%9E%E3%81%AE%E7%A2%BA%E8%AA%8D)
     - [Mysql - スロークエリ](#mysql---%E3%82%B9%E3%83%AD%E3%83%BC%E3%82%AF%E3%82%A8%E3%83%AA)
     - [Nginx - アクセスログ](#nginx---%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%83%AD%E3%82%B0)
 - [Go](#go)
@@ -31,6 +33,8 @@
     - [generatedColumns](#generatedcolumns)
     - [1byte長の半角文字列をピッタリ格納する](#1byte%E9%95%B7%E3%81%AE%E5%8D%8A%E8%A7%92%E6%96%87%E5%AD%97%E5%88%97%E3%82%92%E3%83%94%E3%83%83%E3%82%BF%E3%83%AA%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
     - [UUIDをBINARY(16)で格納する](#uuid%E3%82%92binary16%E3%81%A7%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
+    - [Upsert](#upsert)
+    - [trigger](#trigger)
 - [Nginx](#nginx)
     - [インストール](#%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
     - [keepaliveを有効する](#keepalive%E3%82%92%E6%9C%89%E5%8A%B9%E3%81%99%E3%82%8B)
@@ -71,7 +75,7 @@ git push -u origin main
 
 ## 調査
 
-- VMの状態確認
+#### VMの状態確認
 ```sh
 arch
 free -h
@@ -79,7 +83,7 @@ fgrep 'cpu cores' /proc/cpuinfo | sort -u | sed 's/.*: //'
 systemctl list-unit-files --type=service
 ```
 
-- DBのバージョンとスキーマの確認
+#### DBのバージョンとスキーマの確認
 ```sh
 mysql --version
 ```
@@ -742,6 +746,18 @@ func get(uuid string) {
 	var user User
 	db.Get(&user, "SELECT BIN_TO_UUID(`uuid`) FROM user WHERE uuid = UUID_TO_BIN(?)", uuid)
 }
+```
+
+#### Upsert
+
+```sql
+INSERT INTO `user` (`id`) VALUES (?) ON DUPLICATE KEY UPDATE `name`=?;
+```
+
+#### trigger
+
+```sql
+create trigger playlist_favorite_insert_trigger before insert on playlist_favorite for each row insert into playlist_favorite_count (playlist_id,count) values (NEW.playlist_id, 1) on duplicate key update playlist_favorite_count.count = playlist_favorite_count.count + 1;
 ```
 
 ## Nginx
