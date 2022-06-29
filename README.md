@@ -137,20 +137,20 @@ sudo systemctl restart mysql
 
 - 設定ファイルをホームディレクトリに持ってくる
 
-```
+```sh
 cp /etc/nginx/nginx.conf nginx.conf
 cp /etc/nginx/sites-enabled/$(APP).conf $(APP)
 ```
 
 - アクセスログを吐くようにnginx.confを設定する
-```
+```sh
 sudo touch /var/log/nginx/access.log
 sudo touch /var/log/nginx/error.log
 sudo chmod 777 /var/log/nginx/access.log
 sudo chmod 777 /var/log/nginx/error.log
 ```
 
-```
+```nginx
 http {
     log_format with_time '$remote_addr - $remote_user [$time_local] '
                  '"$request" $status $body_bytes_sent '
@@ -885,7 +885,7 @@ location = /path/to {
 
 #### Botからのリクエストを拒否
 
-```conf
+```nginx
 map $http_user_agent $bot {
     default 0;
     "~ISUCONbot" 1;
