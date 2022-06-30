@@ -826,6 +826,7 @@ systemctl restart nginx
 
 ```conf
 location /assets/ {
+    // root /home/isucon/webapp/public;
     expires 1d;
     try_files $uri /;
   }
