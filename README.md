@@ -35,6 +35,7 @@
     - [UUIDをBINARY(16)で格納する](#uuid%E3%82%92binary16%E3%81%A7%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
     - [Upsert](#upsert)
     - [trigger](#trigger)
+    - [Group毎に最新のレコードをSELECTする](#group%E6%AF%8E%E3%81%AB%E6%9C%80%E6%96%B0%E3%81%AE%E3%83%AC%E3%82%B3%E3%83%BC%E3%83%89%E3%82%92select%E3%81%99%E3%82%8B)
 - [Nginx](#nginx)
     - [インストール](#%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
     - [keepaliveを有効する](#keepalive%E3%82%92%E6%9C%89%E5%8A%B9%E3%81%99%E3%82%8B)
@@ -627,6 +628,9 @@ func bulkInsert(isuList []Isu) {
 	}
 	_, err = db.Exec("INSERT INTO table_name(col_1, col_2, col_3) VALUES" + placeHolders.String(), args...)
 }
+
+// sqlxの場合
+// db.NamedExec("INSERT INTO `latest_isu_level` (`jia_isu_uuid`, `level`) VALUES (:jia_isu_uuid, :level)", latestIsuLevels)
 ```
 
 #### IN句
@@ -751,13 +755,22 @@ func get(uuid string) {
 #### Upsert
 
 ```sql
-INSERT INTO `user` (`id`) VALUES (?) ON DUPLICATE KEY UPDATE `name`=?;
+INSERT INTO `user` (`id`, `name`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `name`=?;
+-- bulk
+INSERT INTO `user` (`id`, `name`) VALUES (:id, :name) ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
 ```
 
 #### trigger
 
 ```sql
-CREATE TRIGGER playlist_favorite_insert_trigger BEFORE INSERT ON playlist_favorite FOR EACH ROW INSERT INTO playlist_favorite_count (playlist_id,count) VALUES (NEW.playlist_id, 1) ON DUPLICATE KEY UPDATE playlist_favorite_count.count = playlist_favorite_count.count + 1;
+`CREATE TRIGGER playlist_favorite_insert_trigger BEFORE INSERT ON playlist_favorite FOR EACH ROW INSERT INTO playlist_favorite_count (playlist_id,count) VALUES (NEW.playlist_id, 1) ON DUPLICATE KEY UPDATE playlist_favorite_count.count = playlist_favorite_count.count + 1;`
+```
+
+#### Group毎に最新のレコードをSELECTする
+
+```sql
+SELECT * FROM isu_condition AS a JOIN (SELECT user_id, MAX(created_at) AS latest FROM isu_condition GROUP BY user_id) AS b
+ON a.user_id = b.user_id WHERE a.created_at = b.latest;
 ```
 
 ## Nginx
