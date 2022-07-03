@@ -840,10 +840,11 @@ systemctl restart nginx
 #### 静的ファイルのクライアントキャッシュ
 
 ```conf
+// root /home/isucon/webapp/public;
+// index index.html;
 location /assets/ {
-    // root /home/isucon/webapp/public;
     expires 1d;
-    try_files $uri /;
+    try_files $uri /index.html;
   }
 ```
 
