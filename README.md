@@ -52,13 +52,13 @@
 
 ## セットアップ
 
-- Makefileから必要ツールをダウンロード
+#### Makefileから必要ツールをダウンロード
 ```sh
 curl -OL https://raw.githubusercontent.com/karamaru-alpha/isucon-memo/main/Makefile
 make setup 
 ```
 
-- ghのインストール 
+#### ghのインストール 
 ```sh
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
@@ -66,7 +66,7 @@ sudo apt install -y gh
 gh auth login # GitHub.com -> SSH -> /home/isucon/.ssh/id_rsa.pub -> Paste an authentication token -> https://github.com/settings/tokens
 ```
 
-- aliasの導入
+#### aliasの導入
 ```sh
 sudo cat <<EOL >> ~/.bashrc
 alias cm="git commit -m"
@@ -81,12 +81,17 @@ EOL
 source ~/.bashrc
 ```
 
-- githubで管理するまで
+#### githubで管理するまで
 ```sh
 git remote add origin git@github.com:karamaru-alpha/${REPO}.git
 git branch -m master main
 git add . && git commit 
 git push -u origin main
+```
+
+#### HostNameの変更
+```sh
+sudo hostnamectl set-hostname isu1
 ```
 
 ## 調査
