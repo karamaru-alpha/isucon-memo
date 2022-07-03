@@ -2,6 +2,11 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [セットアップ](#%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97)
+    - [Makefileから必要ツールをダウンロード](#makefile%E3%81%8B%E3%82%89%E5%BF%85%E8%A6%81%E3%83%84%E3%83%BC%E3%83%AB%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89)
+    - [ghのインストール](#gh%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
+    - [aliasの導入](#alias%E3%81%AE%E5%B0%8E%E5%85%A5)
+    - [githubで管理するまで](#github%E3%81%A7%E7%AE%A1%E7%90%86%E3%81%99%E3%82%8B%E3%81%BE%E3%81%A7)
+    - [HostNameの変更](#hostname%E3%81%AE%E5%A4%89%E6%9B%B4)
 - [調査](#%E8%AA%BF%E6%9F%BB)
     - [VMの状態確認](#vm%E3%81%AE%E7%8A%B6%E6%85%8B%E7%A2%BA%E8%AA%8D)
     - [DBのバージョンとスキーマの確認](#db%E3%81%AE%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E3%81%A8%E3%82%B9%E3%82%AD%E3%83%BC%E3%83%9E%E3%81%AE%E7%A2%BA%E8%AA%8D)
