@@ -8,7 +8,9 @@ DB_USER:=isucon
 DB_PASS:=isucon
 DB_NAME:=isucon
 MYSQL_LOG:=/var/log/mysql/slow-query.log
+MYSQL_ERR:=/var/log/mysql/error.log
 NGINX_LOG:=/var/log/nginx/access.log
+NGINX_ERR:=/var/log/nginx/error.log
 GO_LOG:=/var/log/go.log
 
 .PHONY: setup
@@ -60,7 +62,7 @@ before:
 #	sudo rm -f $(NGINX_ERR)
 #	sudo rm -f $(MYSQL_LOG)
 #	sudo rm -f $(MYSQL_ERR)
-#	sudo rm -f $(GO_LOG)
+#	sudo cp /dev/null $(GO_LOG)
 #	sudo systemctl restart nginx
 #	sudo systemctl restart mysql
 #	sudo systemctl restart $(APP).go.service
@@ -78,6 +80,14 @@ kataru:
 .PHONY: log
 log:
 	sudo cat $(GO_LOG)
+
+.PHONY: log-sql
+log-sql:
+	sudo cat $(MYSQL_ERR)
+
+.PHONY: log-nginx
+log-nginx:
+	sudo cat $(NGINX_ERR)
 
 .PHONY: fetch
 fetch:

@@ -59,11 +59,26 @@ make setup
 ```
 
 - ghのインストール 
-```
+```sh
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 sudo apt install -y gh
 gh auth login # GitHub.com -> SSH -> /home/isucon/.ssh/id_rsa.pub -> Paste an authentication token -> https://github.com/settings/tokens
+```
+
+- aliasの導入
+```sh
+sudo cat <<EOL >> ~/.bashrc
+alias cm="git commit -m"
+alias ad="git add ."
+alias co="git checkout"
+alias save="git add . && git commit -m"
+alias cob="git checkout -b"
+alias mg="git merge"
+alias rename="git branch -m"
+alias del="git branch -D"
+EOL
+source ~/.bashrc
 ```
 
 - githubで管理するまで
