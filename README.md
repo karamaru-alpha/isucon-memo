@@ -6,7 +6,6 @@
     - [ghのインストール](#gh%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
     - [aliasの導入](#alias%E3%81%AE%E5%B0%8E%E5%85%A5)
     - [githubで管理するまで](#github%E3%81%A7%E7%AE%A1%E7%90%86%E3%81%99%E3%82%8B%E3%81%BE%E3%81%A7)
-    - [HostNameの変更](#hostname%E3%81%AE%E5%A4%89%E6%9B%B4)
 - [調査](#%E8%AA%BF%E6%9F%BB)
     - [VMの状態確認](#vm%E3%81%AE%E7%8A%B6%E6%85%8B%E7%A2%BA%E8%AA%8D)
     - [DBのバージョンとスキーマの確認](#db%E3%81%AE%E3%83%90%E3%83%BC%E3%82%B8%E3%83%A7%E3%83%B3%E3%81%A8%E3%82%B9%E3%82%AD%E3%83%BC%E3%83%9E%E3%81%AE%E7%A2%BA%E8%AA%8D)
@@ -92,11 +91,6 @@ git remote add origin git@github.com:karamaru-alpha/${REPO}.git
 git branch -m master main
 git add . && git commit 
 git push -u origin main
-```
-
-#### HostNameの変更
-```sh
-sudo hostnamectl set-hostname isu1
 ```
 
 ## 調査
@@ -925,14 +919,12 @@ location /icon/ {
 
 ```conf
 location = /path/to {
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
     if ($request_method = GET) {
-        proxy_http_version 1.1;
-        proxy_set_header Connection "";
         proxy_pass http://app1;
         break;
     }
-    proxy_http_version 1.1;
-    proxy_set_header Connection "";
     proxy_pass http://app2;
 }
 ```
