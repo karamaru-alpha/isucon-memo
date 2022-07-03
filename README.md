@@ -699,9 +699,12 @@ func main() {
 
 #### 外部からのアクセスを許容する
 
+- goのmysql.openとsqlのinit.ｓｈもHOSTをプライベートアドレスに変更する
+
 ```sh
 # MariaDBの場合
-sudo sed -i -e "s/bind-address[ \f\n\r\t]*=[ \f\n\r\t]*127.0.0.1/bind-address = 0.0.0.0/" /etc/mysql/mariadb.conf.d/50-server.cnf
+/etc/mysql/mariadb.conf.d/*-server.cnf
+bind-address = 0.0.0.0
 ```
 
 #### generatedColumns
