@@ -428,7 +428,7 @@ type omIsuListT struct {
 
 var omIsuList omIsuListT
 
-func (o *omIsuListT) Get(k string) ([]*Isu, bool) {
+func (o *omIsuListT) Get() ([]*Isu, bool) {
 	o.M.RLock()
 	defer o.M.RUnlock()
 	if o.T.After(time.Now()) {
