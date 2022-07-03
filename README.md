@@ -870,8 +870,8 @@ http {
 ```sh
 sudo mkdir -p /var/cache/nginx/cache
 sudo mkdir -p /var/cache/nginx/tmp
-sudo chown nginx /var/cache/nginx/cache
-sudo chown nginx /var/cache/nginx/tmp
+sudo chmod 777 /var/cache/nginx/cache
+sudo chmod 777 /var/cache/nginx/tmp
 ```
 
 
