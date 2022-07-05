@@ -790,8 +790,8 @@ INSERT INTO `user` (`id`, `name`) VALUES (:id, :name) ON DUPLICATE KEY UPDATE `n
 #### Group毎に最新のレコードをSELECTする
 
 ```sql
-SELECT * FROM isu_condition AS a JOIN (SELECT user_id, MAX(created_at) AS latest FROM isu_condition GROUP BY user_id) AS b
-ON a.user_id = b.user_id WHERE a.created_at = b.latest;
+SELECT * FROM isu_condition AS a JOIN (SELECT user_id, MAX(created_at) AS created_at FROM isu_condition GROUP BY user_id) AS b
+ON a.user_id = b.user_id WHERE a.created_at = b.created_at;
 ```
 
 ## Nginx
