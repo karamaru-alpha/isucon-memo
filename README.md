@@ -37,6 +37,7 @@
     - [generatedColumns](#generatedcolumns)
     - [1byte長の半角文字列をピッタリ格納する](#1byte%E9%95%B7%E3%81%AE%E5%8D%8A%E8%A7%92%E6%96%87%E5%AD%97%E5%88%97%E3%82%92%E3%83%94%E3%83%83%E3%82%BF%E3%83%AA%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
     - [UUIDをBINARY(16)で格納する](#uuid%E3%82%92binary16%E3%81%A7%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
+    - [水平分割](#%E6%B0%B4%E5%B9%B3%E5%88%86%E5%89%B2)
     - [Upsert](#upsert)
     - [trigger](#trigger)
     - [Group毎に最新のレコードをSELECTする](#group%E6%AF%8E%E3%81%AB%E6%9C%80%E6%96%B0%E3%81%AE%E3%83%AC%E3%82%B3%E3%83%BC%E3%83%89%E3%82%92select%E3%81%99%E3%82%8B)
@@ -496,6 +497,10 @@ func copy() {
 }
 ```
 
+cf. https://github.com/narusejun/isucon11-qualify/commit/e3cc31346fb89455a0f0123e9ea08156914e28c4
+
+cf. https://github.com/tatsumack/isu11q/commit/ae2da92c4a11b184c9fb479f7cde39e935140baf
+
 #### 一定時間毎に処理をする
 
 ```go
@@ -510,39 +515,28 @@ func loop() {
 
 ```go
 func main() {
-    listener, err := net.Listen("unix", "/run/webapp.sock")
-    if err != nil {
-        e.Logger.Fatalf("failed to init unix domain socket. err:%v", err)
-        return
-    }
-    defer func() {
-        if err := listener.Close(); err != nil {
-            e.Logger.Fatalf("failed to init unix domain socket close. err:%v", err)
-            return
-        }
-    }()
-
-    c := make(chan os.Signal, 2)
-    signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-    go func() {
-        <-c
-        if err := listener.Close(); err != nil {
-            e.Logger.Fatalf("failed to init unix domain socket close. err:%v", err)
-            return
-        }
-    }()
-    e.Listener = listener
-    e.Logger.Info("starting server on unix domain socket...")
-    server := new(http.Server)
-    if err := e.StartServer(server); err != nil {
-        log.Fatal(err)
-    }
+  socket_file := "/var/run/app.sock"
+  os.Remove(socket_file)
+  
+  l, err := net.Listen("unix", socket_file)
+  if err != nil {
+  e.Logger.Fatal(err)
+  }
+  
+  // go runユーザとnginxのユーザ（グループ）を同じにすれば777じゃなくてok
+  err = os.Chmod(socket_file, 0777)
+  if err != nil {
+  e.Logger.Fatal(err)
+  }
+  
+  e.Listener = l
+  e.Logger.Fatal(e.Start(""))
 }
 ```
 
 ```conf
 upstream s1 {
-  server sock:/run/webapp.sock;
+  server sock:/var/run/app.sock;
   keepalive 32;
   keepalive_requests 10000;
 }
@@ -553,6 +547,8 @@ location /api {
   proxy_pass   http://s1;
 }
 ```
+
+cf. https://github.com/narusejun/isucon11-qualify/commit/3d9f96bfe12f263a0ea8f3aa759b8e73c2659f0a
 
 ## Mysql (MariaDB)
 
@@ -773,6 +769,10 @@ func get(uuid string) {
 }
 ```
 
+#### 水平分割
+
+cf. https://github.com/narusejun/isucon11-qualify/commit/fda74ca7e56b70a58a7a49c773cb892d3dae6765
+
 #### Upsert
 
 ```sql
@@ -926,6 +926,12 @@ location = /path/to {
     }
     proxy_pass http://app2;
 }
+
+
+# limit_except GET {
+#     proxy_pass http://app1;
+# }
+# proxy_pass http://app2;
 ```
 
 #### Botからのリクエストを拒否
