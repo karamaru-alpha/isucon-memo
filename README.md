@@ -23,9 +23,10 @@
     - [一定時間毎に処理をする](#%E4%B8%80%E5%AE%9A%E6%99%82%E9%96%93%E6%AF%8E%E3%81%AB%E5%87%A6%E7%90%86%E3%82%92%E3%81%99%E3%82%8B)
     - [UnixDomainSocket](#unixdomainsocket)
 - [Mysql (MariaDB)](#mysql-mariadb)
+    - [外部からのアクセスを許容する](#%E5%A4%96%E9%83%A8%E3%81%8B%E3%82%89%E3%81%AE%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%82%92%E8%A8%B1%E5%AE%B9%E3%81%99%E3%82%8B)
+    - [ユーザの作成](#%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E4%BD%9C%E6%88%90)
     - [MysqlからMariaDBに乗り換える](#mysql%E3%81%8B%E3%82%89mariadb%E3%81%AB%E4%B9%97%E3%82%8A%E6%8F%9B%E3%81%88%E3%82%8B)
     - [MariaDBを最新にする](#mariadb%E3%82%92%E6%9C%80%E6%96%B0%E3%81%AB%E3%81%99%E3%82%8B)
-    - [ユーザの作成](#%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E4%BD%9C%E6%88%90)
     - [デッドロックの調査](#%E3%83%87%E3%83%83%E3%83%89%E3%83%AD%E3%83%83%E3%82%AF%E3%81%AE%E8%AA%BF%E6%9F%BB)
     - [TroubleShoot](#troubleshoot)
     - [Mysqlの起動を待つ](#mysql%E3%81%AE%E8%B5%B7%E5%8B%95%E3%82%92%E5%BE%85%E3%81%A4)
@@ -33,7 +34,6 @@
     - [IN句](#in%E5%8F%A5)
     - [コネクションプール](#%E3%82%B3%E3%83%8D%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3%E3%83%97%E3%83%BC%E3%83%AB)
     - [DBの起動を待つ](#db%E3%81%AE%E8%B5%B7%E5%8B%95%E3%82%92%E5%BE%85%E3%81%A4)
-    - [外部からのアクセスを許容する](#%E5%A4%96%E9%83%A8%E3%81%8B%E3%82%89%E3%81%AE%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%82%92%E8%A8%B1%E5%AE%B9%E3%81%99%E3%82%8B)
     - [generatedColumns](#generatedcolumns)
     - [1byte長の半角文字列をピッタリ格納する](#1byte%E9%95%B7%E3%81%AE%E5%8D%8A%E8%A7%92%E6%96%87%E5%AD%97%E5%88%97%E3%82%92%E3%83%94%E3%83%83%E3%82%BF%E3%83%AA%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
     - [UUIDをBINARY(16)で格納する](#uuid%E3%82%92binary16%E3%81%A7%E6%A0%BC%E7%B4%8D%E3%81%99%E3%82%8B)
@@ -556,6 +556,25 @@ location /api {
 
 ## Mysql (MariaDB)
 
+#### 外部からのアクセスを許容する
+
+- goのmysql.openとsqlのinit.shもHOSTをプライベートアドレスに変更する
+
+```sh
+# MariaDBの場合
+/etc/mysql/mariadb.conf.d/*-server.cnf
+bind-address = 0.0.0.0
+```
+
+#### ユーザの作成
+```sql
+SELECT user, host FROM mysql.user;
+DROP USER 'isucon'@'%';
+CREATE USER 'isucon'@'%' IDENTIFIED BY 'isucon';
+GRANT ALL PRIVILEGES ON * . * TO 'isucon'@'%';
+FLUSH PRIVILEGES;
+```
+
 #### MysqlからMariaDBに乗り換える
 
 ```bash
@@ -595,15 +614,6 @@ sudo rm mariadb_repo_setup
 sudo apt update
 sudo apt install mariadb-server -y
 sudo mysqld --version
-```
-
-#### ユーザの作成
-```sql
-SELECT user, host FROM mysql.user;
-DROP USER 'isucon'@'localhost';
-CREATE USER 'isucon'@'localhost' IDENTIFIED BY 'isucon';
-GRANT ALL PRIVILEGES ON * . * TO 'isucon'@'localhost';
-FLUSH PRIVILEGES;
 ```
 
 #### デッドロックの調査
@@ -699,16 +709,6 @@ func main() {
         }
         time.Sleep(time.Second * 1)
     }
-```
-
-#### 外部からのアクセスを許容する
-
-- goのmysql.openとsqlのinit.ｓｈもHOSTをプライベートアドレスに変更する
-
-```sh
-# MariaDBの場合
-/etc/mysql/mariadb.conf.d/*-server.cnf
-bind-address = 0.0.0.0
 ```
 
 #### generatedColumns
