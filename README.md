@@ -632,8 +632,7 @@ SHOW ENGINE INNODB STATUS;
 func main() {
 	// db.Open　の直後
 	for {
-		err := db.Ping()
-		if err == nil {
+		if err := db.Ping(); err == nil {
 			break
 		}
 		time.Sleep(time.Second * 1)
