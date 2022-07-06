@@ -87,10 +87,10 @@ sql:
 log:
 	sudo cat $(GO_LOG)
 
-.PHONY: log-sql
-log-sql:
-	sudo cat $(MYSQL_ERR)
-
 .PHONY: log-nginx
 log-nginx:
 	sudo cat $(NGINX_ERR)
+
+.PHONY: log-sql
+log-sql:
+	sudo cat $(MYSQL_ERR)
