@@ -23,6 +23,7 @@
     - [一定時間毎に処理をする](#%E4%B8%80%E5%AE%9A%E6%99%82%E9%96%93%E6%AF%8E%E3%81%AB%E5%87%A6%E7%90%86%E3%82%92%E3%81%99%E3%82%8B)
     - [UnixDomainSocket](#unixdomainsocket)
 - [Mysql (MariaDB)](#mysql-mariadb)
+    - [DB用のインスタンスのセットアップ](#db%E7%94%A8%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%82%BF%E3%83%B3%E3%82%B9%E3%81%AE%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97)
     - [外部からのアクセスを許容する](#%E5%A4%96%E9%83%A8%E3%81%8B%E3%82%89%E3%81%AE%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%82%92%E8%A8%B1%E5%AE%B9%E3%81%99%E3%82%8B)
     - [ユーザの作成](#%E3%83%A6%E3%83%BC%E3%82%B6%E3%81%AE%E4%BD%9C%E6%88%90)
     - [MysqlからMariaDBに乗り換える](#mysql%E3%81%8B%E3%82%89mariadb%E3%81%AB%E4%B9%97%E3%82%8A%E6%8F%9B%E3%81%88%E3%82%8B)
@@ -82,6 +83,8 @@ alias cob="git checkout -b"
 alias mg="git merge"
 alias rename="git branch -m"
 alias del="git branch -D"
+alias pullf='(){git fetch origin $1 && git reset --hard origin/$1}'
+alias refresh="git checkout . && git clean -df"
 EOL
 source ~/.bashrc
 ```
@@ -515,7 +518,7 @@ func loop() {
 
 ```go
 func main() {
-  socket_file := "/var/run/app.sock"
+  socket_file := "/home/isucon/webapp/tmp/app.sock"
   os.Remove(socket_file)
   
   l, err := net.Listen("unix", socket_file)
@@ -536,7 +539,7 @@ func main() {
 
 ```conf
 upstream s1 {
-  server sock:/var/run/app.sock;
+  server sock:/home/isucon/webapp/tmp/app.sock;
   keepalive 32;
   keepalive_requests 10000;
 }
@@ -548,13 +551,38 @@ location /api {
 }
 ```
 
+```
+mkdir tmp
+-> gitignore
+```
+
 cf. https://github.com/narusejun/isucon11-qualify/commit/3d9f96bfe12f263a0ea8f3aa759b8e73c2659f0a
 
 ## Mysql (MariaDB)
 
+#### DB用のインスタンスのセットアップ
+
+```
+sudo -u -i isucon
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update
+sudo apt install -y gh
+gh auth login
+git init
+git config --global user.name karamaru-alpha
+git config --global user.email mrnk3078@gmail.com
+git config --global pull.rebase false
+git config credential.helper store
+git remote add origin git@github.com:karamaru-alpha/${REPO}.git
+git fetch origin main && git reset --hard origin/main
+git branch -m master main	
+```
+
 #### 外部からのアクセスを許容する
 
 - goのmysql.openとsqlのinit.shもHOSTをプライベートアドレスに変更する
+- '%'のユーザー作成も忘れずに！
 
 ```sh
 # MariaDBの場合

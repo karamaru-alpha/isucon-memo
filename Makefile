@@ -77,6 +77,12 @@ slow:
 kataru:
 	sudo cat $(NGINX_LOG) | kataribe -f $(APP_PATH)/kataribe.toml
 
+
+.PHONY: sql
+sql:
+	mysql -h$(DB_HOST) -P$(DB_PORT) -u$(DB_USER) -p$(DB_PASS) $(DB_NAME)
+	# docker-compose exec mysql bash -c 'mysql -uisucon -pisucon isucari'
+
 .PHONY: log
 log:
 	sudo cat $(GO_LOG)
@@ -88,12 +94,3 @@ log-sql:
 .PHONY: log-nginx
 log-nginx:
 	sudo cat $(NGINX_ERR)
-
-.PHONY: fetch
-fetch:
-	cd $(APP_PATH) && git fetch origin main && git reset --hard origin/main
-
-.PHONY: sql
-sql:
-	mysql -h$(DB_HOST) -P$(DB_PORT) -u$(DB_USER) -p$(DB_PASS) $(DB_NAME)
-	# docker-compose exec mysql bash -c 'mysql -uisucon -pisucon isucari'
