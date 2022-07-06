@@ -83,7 +83,6 @@ alias cob="git checkout -b"
 alias mg="git merge"
 alias rename="git branch -m"
 alias del="git branch -D"
-alias pullf='(){git fetch origin $1 && git reset --hard origin/$1}'
 alias refresh="git checkout . && git clean -df"
 EOL
 source ~/.bashrc
