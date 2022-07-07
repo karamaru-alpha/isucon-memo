@@ -982,6 +982,8 @@ server {
     listen [::]:80 default_server;
 
     if ($bot = 1) { return 503; }
+    
+    # if ( $http_user_agent ~* ISUCONbot(-Mobile)? ) { return 503; }
 }
 ```
 
