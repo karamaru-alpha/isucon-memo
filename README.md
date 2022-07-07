@@ -578,6 +578,11 @@ git fetch origin main && git reset --hard origin/main
 git branch -m master main	
 ```
 
+```
+sudo touch /var/log/mysql/slow-query.log
+sudo chown -R mysql /var/log/mysql/slow-query.log
+```
+
 #### 外部からのアクセスを許容する
 
 - goのmysql.openとsqlのinit.shもHOSTをプライベートアドレスに変更する
