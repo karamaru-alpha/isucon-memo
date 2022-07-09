@@ -146,6 +146,7 @@ sudo chown -R mysql /var/log/mysql/slow-query.log
 ```
 
 ```conf
+[mysqld]
 log_error = /var/log/mysql/error.log
 slow_query_log_file = /var/log/mysql/slow-query.log
 slow_query_log = ON
@@ -222,10 +223,10 @@ func main() {
 	if err != nil {
 		panic("cannnot open test.log:" + err.Error())
 	}
-    defer logfile.Close()
-    log.SetOutput(logfile)
-    e.Logger.SetOutput(logfile)
-    log.Print("initialize!!!!")
+	defer logfile.Close()
+	log.SetOutput(logfile)
+	log.Print("main!!!!")
+	e.Logger.SetOutput(logfile)
 }
 ```
 
