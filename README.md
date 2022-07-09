@@ -91,7 +91,7 @@ source ~/.bashrc
 #### githubで管理するまで
 ```sh
 git remote add origin git@github.com:karamaru-alpha/${REPO}.git
-git branch -m master main
+git branch -M master main
 git add . && git commit 
 git push -u origin main
 ```
