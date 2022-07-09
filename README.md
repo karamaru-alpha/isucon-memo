@@ -223,10 +223,10 @@ func main() {
 	if err != nil {
 		panic("cannnot open test.log:" + err.Error())
 	}
-    defer logfile.Close()
-    log.SetOutput(logfile)
-    e.Logger.SetOutput(logfile)
-    log.Print("initialize!!!!")
+	defer logfile.Close()
+	log.SetOutput(logfile)
+	log.Print("main!!!!")
+	e.Logger.SetOutput(logfile)
 }
 ```
 
