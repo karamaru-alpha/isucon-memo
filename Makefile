@@ -48,8 +48,8 @@ setup:
 #	gh auth login
 #	GitHub.com -> SSH -> /home/isucon/.ssh/id_rsa.pub -> Paste an authentication token -> https://github.com/settings/tokens
 
-.PHONY: before
-before:
+.PHONY: isu1
+isu1:
 	cd $(APP_PATH)
 	git checkout . && git clean -df .
 	git rev-parse --abbrev-ref HEAD | xargs echo "BRANCH:"
