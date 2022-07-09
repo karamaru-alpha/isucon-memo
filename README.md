@@ -533,12 +533,13 @@ func main() {
   
   e.Listener = l
   e.Logger.Fatal(e.Start(""))
+  // http.Serve(l, mux)
 }
 ```
 
 ```conf
 upstream s1 {
-  server sock:/home/isucon/webapp/tmp/app.sock;
+  server unix:/home/isucon/webapp/tmp/app.sock;
   keepalive 32;
   keepalive_requests 10000;
 }
