@@ -570,6 +570,7 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githu
 sudo apt update
 sudo apt install -y gh
 gh auth login
+cd ./webapp
 git init
 git config --global user.name karamaru-alpha
 git config --global user.email mrnk3078@gmail.com
@@ -577,12 +578,27 @@ git config --global pull.rebase false
 git config credential.helper store
 git remote add origin git@github.com:karamaru-alpha/${REPO}.git
 git fetch origin main && git reset --hard origin/main
-git branch -m master main	
+git branch -M master main	
 ```
 
 ```
 sudo touch /var/log/mysql/slow-query.log
 sudo chown -R mysql /var/log/mysql/slow-query.log
+```
+
+```
+sudo cat <<EOL >> ~/.bashrc
+alias cm="git commit -m"
+alias ad="git add ."
+alias co="git checkout"
+alias save="git add . && git commit -m"
+alias cob="git checkout -b"
+alias mg="git merge"
+alias rename="git branch -m"
+alias del="git branch -D"
+alias refresh="git checkout . && git clean -df"
+EOL
+source ~/.bashrc
 ```
 
 #### 外部からのアクセスを許容する
