@@ -146,6 +146,7 @@ sudo chown -R mysql /var/log/mysql/slow-query.log
 ```
 
 ```conf
+[mysqld]
 log_error = /var/log/mysql/error.log
 slow_query_log_file = /var/log/mysql/slow-query.log
 slow_query_log = ON
