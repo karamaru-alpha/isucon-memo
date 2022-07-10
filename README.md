@@ -52,6 +52,7 @@
     - [リクエストメソッドで処理を出し分ける](#%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%A1%E3%82%BD%E3%83%83%E3%83%89%E3%81%A7%E5%87%A6%E7%90%86%E3%82%92%E5%87%BA%E3%81%97%E5%88%86%E3%81%91%E3%82%8B)
     - [Botからのリクエストを拒否](#bot%E3%81%8B%E3%82%89%E3%81%AE%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%82%92%E6%8B%92%E5%90%A6)
 - [Linux](#linux)
+    - [ファイルディスクリプタ上限up](#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%82%BF%E4%B8%8A%E9%99%90up)
     - [Systemdでアプリを動かす](#systemd%E3%81%A7%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E5%8B%95%E3%81%8B%E3%81%99)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -884,13 +885,13 @@ cat /proc/${PID}/limits
 
 sudo mkdir /etc/systemd/system/nginx.service.d
 
-vi /etc/systemd/system/nginx.service.d/limit.conf
+sudo vi /etc/systemd/system/nginx.service.d/limit.conf
 [Service]
 LimitNOFILE=32768
 
 
-systemctl daemon-reload
-systemctl restart nginx
+sudo systemctl daemon-reload
+sudo systemctl restart nginx
 ```
 
 #### 静的ファイルのクライアントキャッシュ
@@ -1011,6 +1012,16 @@ server {
 ```
 
 ## Linux
+
+#### ファイルディスクリプタ上限up
+
+```
+sudo vi /etc/security/limits.conf
+*                hard   nofile           10240
+*                soft   nofile           10240
+
+ulimit -n
+```
 
 #### Systemdでアプリを動かす
 
