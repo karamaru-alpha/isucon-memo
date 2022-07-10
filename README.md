@@ -51,6 +51,7 @@
     - [認証付きの静的配信(X-Accel-Redirect)](#%E8%AA%8D%E8%A8%BC%E4%BB%98%E3%81%8D%E3%81%AE%E9%9D%99%E7%9A%84%E9%85%8D%E4%BF%A1x-accel-redirect)
     - [リクエストメソッドで処理を出し分ける](#%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%A1%E3%82%BD%E3%83%83%E3%83%89%E3%81%A7%E5%87%A6%E7%90%86%E3%82%92%E5%87%BA%E3%81%97%E5%88%86%E3%81%91%E3%82%8B)
     - [Botからのリクエストを拒否](#bot%E3%81%8B%E3%82%89%E3%81%AE%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%82%92%E6%8B%92%E5%90%A6)
+    - [事前圧縮](#%E4%BA%8B%E5%89%8D%E5%9C%A7%E7%B8%AE)
 - [Linux](#linux)
     - [ファイルディスクリプタ上限up](#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%82%BF%E4%B8%8A%E9%99%90up)
     - [Systemdでアプリを動かす](#systemd%E3%81%A7%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E5%8B%95%E3%81%8B%E3%81%99)
@@ -1008,6 +1009,21 @@ server {
     if ($bot = 1) { return 503; }
     
     # if ( $http_user_agent ~* ISUCONbot(-Mobile)? ) { return 503; }
+}
+```
+
+#### 事前圧縮
+
+```
+location /asset/ {
+    gzip on;
+    gzip_types text/css application/javascript application/json application/font-woff application/font-tff image/gif image/png image/jpeg image/svg+xml image/x-icon application/octet-stream;
+    gzip_disable "msie6";
+    gzip_static on;  # nginx configure時に --with-http_gzip_static_module 必要
+    gzip_vary on;
+
+    expires 1d;
+    try_files $uri /index.html;
 }
 ```
 
