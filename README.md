@@ -1053,7 +1053,7 @@ Type=simple
 User=isucon
 Group=isucon
 
-# EnvironmentFile=/etc/sysconfig/webapp
+# EnvironmentFile=/home/isucon/env.shcm
 
 # (file size)
 LimitFSIZE=infinity
