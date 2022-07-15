@@ -901,9 +901,16 @@ sudo systemctl restart nginx
 // root /home/isucon/webapp/public;
 // index index.html;
 location /assets/ {
-    expires 1d;
-    try_files $uri /index.html;
-  }
+  expires 1d;
+  try_files $uri /index.html;
+}
+location ~ ^/isu/(.*?) {
+  rewrite .* /index.html;
+  alias /home/isucon/webapp/public/index.html;
+}
+location /register {
+  alias /home/isucon/webapp/public/index.html;
+} 
 ```
 
 #### レスポンスキャッシュ(ProxyCache)
