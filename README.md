@@ -249,18 +249,17 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-var group singleflight.Group
+var group1 singleflight.Group
 
-func call(name string) {
+func main() {
 	//　同一 name が処理中なら一緒に結果を待つ
-	v, err, shared := group.Do(name, func() (interface{}, error) {
+	v, err, _ := group1.Do("group1", func() (interface{}, error) {
 		// 時間がかかる処理
 		return time.Now(), nil
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("結果:", v, ", 重複が発生したか:", shared)
 }
 ```
 
