@@ -827,7 +827,8 @@ INSERT INTO `user` (`id`, `name`) VALUES (:id, :name) ON DUPLICATE KEY UPDATE `n
 #### trigger
 
 ```sql
-`CREATE TRIGGER playlist_favorite_insert_trigger BEFORE INSERT ON playlist_favorite FOR EACH ROW INSERT INTO playlist_favorite_count (playlist_id,count) VALUES (NEW.playlist_id, 1) ON DUPLICATE KEY UPDATE playlist_favorite_count.count = playlist_favorite_count.count + 1;`
+DROP TRIGGER IF EXISTS tr1;
+CREATE TRIGGER tr1 BEFORE INSERT ON playlist_favorite FOR EACH ROW INSERT INTO playlist_favorite_count (playlist_id,count) VALUES (NEW.playlist_id, 1) ON DUPLICATE KEY UPDATE playlist_favorite_count.count = playlist_favorite_count.count + 1;
 ```
 
 #### Group毎に最新のレコードをSELECTする
