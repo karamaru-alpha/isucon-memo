@@ -200,6 +200,8 @@ sudo chmod 777 /var/log/go.log
 ```go
 import (
 	"log"
+
+    log2 "github.com/labstack/gommon/log"
 )
 
 func main() {
@@ -212,7 +214,7 @@ func main() {
 	log.SetOutput(logfile)
 	log.Print("main!!!!")
 	e.Logger.SetOutput(logfile)
-	e.Logger.SetLevel(log.ERROR)
+	e.Logger.SetLevel(log2.ERROR)
 }
 ```
 
