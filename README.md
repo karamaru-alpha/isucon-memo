@@ -249,11 +249,11 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-var group1 singleflight.Group
+var flight singleflight.Group
 
 func main() {
 	//　同一 name が処理中なら一緒に結果を待つ
-	v, err, _ := group1.Do("group1", func() (interface{}, error) {
+	v, err, _ := flight.Do("group1", func() (interface{}, error) {
 		// 時間がかかる処理
 		return time.Now(), nil
 	})
