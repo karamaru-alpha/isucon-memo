@@ -42,7 +42,7 @@
     - [Upsert](#upsert)
     - [trigger](#trigger)
     - [Group毎に最新のレコードをSELECTする](#group%E6%AF%8E%E3%81%AB%E6%9C%80%E6%96%B0%E3%81%AE%E3%83%AC%E3%82%B3%E3%83%BC%E3%83%89%E3%82%92select%E3%81%99%E3%82%8B)
-    - [アドバイアザリロック](#%E3%82%A2%E3%83%89%E3%83%90%E3%82%A4%E3%82%A2%E3%82%B6%E3%83%AA%E3%83%AD%E3%83%83%E3%82%AF)
+    - [アドバイザリロック](#%E3%82%A2%E3%83%89%E3%83%90%E3%82%A4%E3%82%B6%E3%83%AA%E3%83%AD%E3%83%83%E3%82%AF)
 - [Nginx](#nginx)
     - [インストール](#%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
     - [keepaliveを有効する](#keepalive%E3%82%92%E6%9C%89%E5%8A%B9%E3%81%99%E3%82%8B)
@@ -839,7 +839,7 @@ ON a.user_id = b.user_id WHERE a.created_at = b.created_at;
 ```
 
 
-#### アドバイアザリロック
+#### アドバイザリロック
 
 ```go
 func main() {
