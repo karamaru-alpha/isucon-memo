@@ -94,7 +94,7 @@ source ~/.bashrc
 
 #### githubで管理するまで
 ```sh
-git remote add origin git@github.com:karamaru-alpha/${REPO}.git
+git remote add origin git@github.com:karamaru-alpha/isucon12-q.git
 git add . && git commit -m "init"
 git branch -M master main
 git push -u origin main
@@ -116,7 +116,7 @@ mysql --version
 ```
 
 ```sh
-mysqldump -uroot -proot --host 127.0.0.1 --port 3306 ${DATABASE} --compact --no-data --compact --no-data | grep -v "^SET" | grep -v "^/\*\!" | perl -ple 's@CREATE TABLE @\nCREATE TABLE @g';
+mysqldump -uisucon -pisucon --host 127.0.0.1 --port 3306 ${DATABASE} --compact --no-data --compact --no-data | grep -v "^SET" | grep -v "^/\*\!" | perl -ple 's@CREATE TABLE @\nCREATE TABLE @g';
 ```
 
 ```sql
@@ -569,7 +569,7 @@ git config --global user.name karamaru-alpha
 git config --global user.email mrnk3078@gmail.com
 git config --global pull.rebase false
 git config credential.helper store
-git remote add origin git@github.com:karamaru-alpha/${REPO}.git
+git remote add origin git@github.com:karamaru-alpha/isucon12-q.git
 git fetch origin main && git reset --hard origin/main
 git branch -M master main	
 ```
