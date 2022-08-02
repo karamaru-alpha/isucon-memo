@@ -59,6 +59,12 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
+
+## TODO
+- pprofをいい感じに取る方法の模索
+- パスパラメータ/クエリパラメータで処理を振り分けるNginxの記述方
+- sync.Map活用
+
 ## セットアップ
 
 #### Makefileから必要ツールをダウンロード
@@ -223,13 +229,12 @@ func main() {
 
 #### Ubuntu環境にインストール
 ```
-sudo add-apt-repository ppa:longsleep/golang-backports
-sudo apt update
-apt info golang
-sudo apt install golang (golang=1.18.0)
+wget https://go.dev/dl/go1.18.4.linux-amd64.tar.gz -O go.tar.gz
+sudo tar -C /usr/local -xzf go.tar.gz
+sudo rm -rf go.tar.gz
 ```
 
-cf. https://go.dev/doc/installd
+cf. https://go.dev/dl/
 
 #### Build
 ```
@@ -1086,4 +1091,11 @@ WantedBy = multi-user.target
 ---
 
 sudo systemctl daemon-reload
+```
+
+#### shellの変更
+
+sudo権限があるuserで
+```
+sudo usermod -s /bin/bash isucon
 ```
