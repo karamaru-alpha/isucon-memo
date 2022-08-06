@@ -1232,6 +1232,17 @@ sudo systemctl daemon-reload
 #### shellの変更
 
 sudo権限があるuserで
-```
+```shell
 sudo usermod -s /bin/bash isucon
+```
+
+#### isuconUserでssh
+
+```shell
+cat ~/.ssh/id_rsa.pub | pbcopy
+c
+
+echo <copy> | xargs sudo cat <<EOL >> ~/.ssh/known_hosts
+<copy>
+EOL
 ```

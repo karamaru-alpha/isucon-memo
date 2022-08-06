@@ -33,7 +33,7 @@ type User struct {
 }
 
 var userCache = Cache[[]User]{
-	cache: cache.New(cache.NoExpiration, cache.NoExpiration),
+	cache: cache.New(time.Minute*3, time.Minute*3),
 }
 
 func main() {
