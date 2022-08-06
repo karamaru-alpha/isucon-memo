@@ -1,6 +1,7 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [TODO](#todo)
 - [セットアップ](#%E3%82%BB%E3%83%83%E3%83%88%E3%82%A2%E3%83%83%E3%83%97)
     - [Makefileから必要ツールをダウンロード](#makefile%E3%81%8B%E3%82%89%E5%BF%85%E8%A6%81%E3%83%84%E3%83%BC%E3%83%AB%E3%82%92%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%89)
     - [ghのインストール](#gh%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
@@ -50,12 +51,16 @@
     - [静的ファイルのクライアントキャッシュ](#%E9%9D%99%E7%9A%84%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AE%E3%82%AF%E3%83%A9%E3%82%A4%E3%82%A2%E3%83%B3%E3%83%88%E3%82%AD%E3%83%A3%E3%83%83%E3%82%B7%E3%83%A5)
     - [レスポンスキャッシュ(ProxyCache)](#%E3%83%AC%E3%82%B9%E3%83%9D%E3%83%B3%E3%82%B9%E3%82%AD%E3%83%A3%E3%83%83%E3%82%B7%E3%83%A5proxycache)
     - [認証付きの静的配信(X-Accel-Redirect)](#%E8%AA%8D%E8%A8%BC%E4%BB%98%E3%81%8D%E3%81%AE%E9%9D%99%E7%9A%84%E9%85%8D%E4%BF%A1x-accel-redirect)
-    - [リクエストメソッドで処理を出し分ける](#%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%A1%E3%82%BD%E3%83%83%E3%83%89%E3%81%A7%E5%87%A6%E7%90%86%E3%82%92%E5%87%BA%E3%81%97%E5%88%86%E3%81%91%E3%82%8B)
+    - [リクエストメソッドでリダイレクト](#%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%A1%E3%82%BD%E3%83%83%E3%83%89%E3%81%A7%E3%83%AA%E3%83%80%E3%82%A4%E3%83%AC%E3%82%AF%E3%83%88)
+    - [パスパラメータでリダイレクト](#%E3%83%91%E3%82%B9%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%81%A7%E3%83%AA%E3%83%80%E3%82%A4%E3%83%AC%E3%82%AF%E3%83%88)
+  - [クエリパラメータでリダイレクト](#%E3%82%AF%E3%82%A8%E3%83%AA%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%81%A7%E3%83%AA%E3%83%80%E3%82%A4%E3%83%AC%E3%82%AF%E3%83%88)
+  - [URLの部分一致でリダイレクト](#url%E3%81%AE%E9%83%A8%E5%88%86%E4%B8%80%E8%87%B4%E3%81%A7%E3%83%AA%E3%83%80%E3%82%A4%E3%83%AC%E3%82%AF%E3%83%88)
     - [Botからのリクエストを拒否](#bot%E3%81%8B%E3%82%89%E3%81%AE%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%82%92%E6%8B%92%E5%90%A6)
     - [圧縮 / 事前圧縮](#%E5%9C%A7%E7%B8%AE--%E4%BA%8B%E5%89%8D%E5%9C%A7%E7%B8%AE)
 - [Linux](#linux)
     - [ファイルディスクリプタ上限up](#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%82%BF%E4%B8%8A%E9%99%90up)
     - [Systemdでアプリを動かす](#systemd%E3%81%A7%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E5%8B%95%E3%81%8B%E3%81%99)
+    - [shellの変更](#shell%E3%81%AE%E5%A4%89%E6%9B%B4)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -868,7 +873,7 @@ systemctl list-unit-files --type=service
 #### keepaliveを有効する
 
 HTTP/1.1を使用する&Connectionヘッダを空にする必要がある
-```conf
+```nginx configuration
 upstream s1 {
   server 127.0.0.1:3000;
   keepalive 32;
@@ -904,7 +909,7 @@ sudo systemctl restart nginx
 
 #### 静的ファイルのクライアントキャッシュ
 
-```conf
+```nginx configuration
 // root /home/isucon/webapp/public;
 // index index.html;
 location /assets/ {
@@ -922,7 +927,7 @@ location /register {
 
 #### レスポンスキャッシュ(ProxyCache)
 
-```conf
+```nginx configuration
 http {
     # キャッシュ先のファイル指定・2階層で保存・zone1キー名で1M確保・1ギガまで使う・2分で削除
     proxy_cache_path /var/cache/nginx/cache levels=1:2 keys_zone=zone1:1m max_size=1g inactive=2m;
@@ -961,7 +966,7 @@ func getIsuIcon(c echo.Context) error {
 }
 ```
 
-```conf
+```nginx configuration
 # ここにリクエストが来て -> app
 location ^~ /api/isu/(.*)/icon {
     expires 1d;
@@ -980,10 +985,10 @@ location /icon/ {
 }
 ```
 
-#### リクエストメソッドで処理を出し分ける
+#### リクエストメソッドでリダイレクト
 
-```conf
-location = /path/to {
+```nginx configuration
+location /path {
     proxy_http_version 1.1;
     proxy_set_header Connection "";
     if ($request_method = GET) {
@@ -993,16 +998,54 @@ location = /path/to {
     proxy_pass http://app2;
 }
 
-
 # limit_except GET {
 #     proxy_pass http://app1;
 # }
 # proxy_pass http://app2;
 ```
 
+#### パスパラメータでリダイレクト
+
+```nginx configuration
+location /path {
+    location ~ ^/path/karamaru|karaki {
+        proxy_pass http://s1;
+    }
+    location /path {
+        proxy_pass http://s2;
+    }
+}
+```
+
+### クエリパラメータでリダイレクト
+
+```nginx configuration
+# $arg_{キー}でクエリストリングが取得できる
+location /query {
+    if ( $arg_name ~ karamaru|karaki ) {
+        proxy_pass http://s1;
+        break;
+    }
+    proxy_pass http://s2;
+}
+```
+
+### URLの部分一致でリダイレクト
+
+```nginx configuration
+location / {
+   location ~ ^.*?karamaru|karaki.*$ {
+        proxy_pass http://s1;
+   }
+   location / {
+          proxy_pass http://s2;
+   }
+}
+```
+
 #### Botからのリクエストを拒否
 
-```nginx
+```nginx configuration
 map $http_user_agent $bot {
     default 0;
     "~ISUCONbot" 1;
@@ -1028,13 +1071,13 @@ server {
 
 #### 圧縮 / 事前圧縮
 
-```
+```nginx configuration
 gzip on;
 gzip_types text/css application/javascript application/json application/font-woff application/font-tff image/gif image/png image/jpeg image/svg+xml image/x-icon application/octet-stream;
 gzip_min_length 1k;
 ```
 
-```
+```nginx configuration
 location /asset/ { 
     gzip_static always;
     gunzip on;
