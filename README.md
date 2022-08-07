@@ -61,6 +61,7 @@
     - [ファイルディスクリプタ上限up](#%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%87%E3%82%A3%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%97%E3%82%BF%E4%B8%8A%E9%99%90up)
     - [Systemdでアプリを動かす](#systemd%E3%81%A7%E3%82%A2%E3%83%97%E3%83%AA%E3%82%92%E5%8B%95%E3%81%8B%E3%81%99)
     - [shellの変更](#shell%E3%81%AE%E5%A4%89%E6%9B%B4)
+    - [githubの鍵でssh](#github%E3%81%AE%E9%8D%B5%E3%81%A7ssh)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1236,13 +1237,13 @@ sudo権限があるuserで
 sudo usermod -s /bin/bash isucon
 ```
 
-#### isuconUserでssh
+#### githubの鍵でssh
 
 ```shell
 cat ~/.ssh/id_rsa.pub | pbcopy
-c
 
-echo <copy> | xargs sudo cat <<EOL >> ~/.ssh/known_hosts
-<copy>
-EOL
+sudo chmod 0700 ~/.ssh
+sudo vim ~/.ssh/authorized_keys
+sudo chmod 0600 ~/.ssh/authorized_keys
+sudo systemctl restart sshd.service
 ```
