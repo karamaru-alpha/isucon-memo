@@ -242,8 +242,6 @@ sudo cat <<EOL >> ~/.bashrc
 export PATH=$PATH:/usr/local/go/bin
 EOL
 source ~/.bashrc
-
-
 ```
 
 cf. https://go.dev/dl/
