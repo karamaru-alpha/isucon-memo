@@ -938,6 +938,9 @@ INSERT INTO `user` (`id`, `name`) VALUES (:id, :name) ON DUPLICATE KEY UPDATE `n
 ```sql
 DROP TRIGGER IF EXISTS tr1;
 CREATE TRIGGER tr1 BEFORE INSERT ON playlist_favorite FOR EACH ROW INSERT INTO playlist_favorite_count (playlist_id,count) VALUES (NEW.playlist_id, 1) ON DUPLICATE KEY UPDATE playlist_favorite_count.count = playlist_favorite_count.count + 1;
+
+DROP TRIGGER IF EXISTS tr2;
+CREATE TRIGGER tr2 BEFORE DELETE ON `message` FOR EACH ROW UPDATE `channel` SET `message_cnt`=`message_cnt`-1;
 ```
 
 #### Group毎に最新のレコードをSELECTする
@@ -945,6 +948,12 @@ CREATE TRIGGER tr1 BEFORE INSERT ON playlist_favorite FOR EACH ROW INSERT INTO p
 ```sql
 SELECT * FROM isu_condition AS a JOIN (SELECT user_id, MAX(created_at) AS created_at FROM isu_condition GROUP BY user_id) AS b
 ON a.user_id = b.user_id WHERE a.created_at = b.created_at;
+```
+
+#### 個テーブルの個数をサブクエリで持ってきてUpdate
+
+```sql
+UPDATE `channel`, (SELECT channel_id, COUNT(1) AS `message_cnt` FROM `message` GROUP BY channel_id) AS `summary` SET `channel`.`message_cnt`=`summary`.`message_cnt` WHERE channel.id = summary.channel_id
 ```
 
 
