@@ -235,8 +235,7 @@ func main() {
 #### Ubuntu環境にインストール
 ```
 wget https://go.dev/dl/go1.19.linux-amd64.tar.gz -O go.tar.gz
-sudo tar -C 
- -xzf go.tar.gz
+sudo tar -C -xzf go.tar.gz
 sudo rm -rf go.tar.gz
 
 sudo cat <<EOL >> ~/.bashrc
