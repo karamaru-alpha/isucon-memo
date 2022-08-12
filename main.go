@@ -66,7 +66,7 @@ func (c *Cacher[T]) Flush() {
 	c.Mutex.Unlock()
 }
 
-func initCacher[T any](typ T) Cacher[*T] {
+func initCacher[T any]() Cacher[*T] {
 	return Cacher[*T]{
 		Cache: make(map[string]struct {
 			Value   *T
@@ -79,7 +79,7 @@ type Thing struct {
 	Name string
 }
 
-var ThingCacher = initCacher(Thing{})
+var ThingCacher = initCacher[Thing]()
 
 func main() {
 	isu := &Thing{Name: "isu"}
