@@ -32,7 +32,6 @@ func (c *Cacher[T]) GetAll() ([]T, bool) {
 		slice = append(slice, v.Value)
 	}
 	c.Mutex.RUnlock()
-
 	return slice, false
 }
 
