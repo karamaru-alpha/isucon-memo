@@ -25,14 +25,14 @@ func (c *Cacher[T]) Get(key string) (T, bool) {
 	return defaultValue, false
 }
 
-func (c *Cacher[T]) GetAll() ([]T, bool) {
+func (c *Cacher[T]) GetAll() []T {
 	c.Mutex.RLock()
 	slice := make([]T, 0, len(c.Cache))
 	for _, v := range c.Cache {
 		slice = append(slice, v.Value)
 	}
 	c.Mutex.RUnlock()
-	return slice, false
+	return slice
 }
 
 func (c *Cacher[T]) Set(key string, value T, ttl time.Duration) {
