@@ -661,6 +661,20 @@ mkdir tmp
 
 cf. https://github.com/narusejun/isucon11-qualify/commit/3d9f96bfe12f263a0ea8f3aa759b8e73c2659f0a
 
+#### httpリクエスト
+
+```go
+func main() {
+    req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://172.31.5.58:5000/initialize/isu3", nil)
+    if err != nil {
+    panic(err)
+    }
+    _, err = http.DefaultClient.Do(req)
+    if err != nil {
+    return err
+}
+```
+
 ## Mysql (MariaDB)
 
 #### DB用のインスタンスのセットアップ
