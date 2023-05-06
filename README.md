@@ -118,7 +118,7 @@ git push -u origin main
 arch
 free -h
 fgrep 'cpu cores' /proc/cpuinfo | sort -u | sed 's/.*: //'
-systemctl list-unit-files --type=service
+systemctl list-unit-files --type=service | grep -e isu -e nginx -e sql
 ```
 
 #### DBのバージョンとスキーマの確認
