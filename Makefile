@@ -13,7 +13,7 @@ NGINX_LOG:=/var/log/nginx/access.log
 NGINX_ERR:=/var/log/nginx/error.log
 GO_LOG:=/var/log/go.log
 
-.PHONY: msetup
+.PHONY: setup
 setup:
 	sudo apt update
 	sudo apt install -y percona-toolkit git unzip
