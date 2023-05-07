@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const CACHE_KEY = "CACHE_KEY"
+
 type Cacher[T any] struct {
 	Mutex sync.RWMutex
 	Cache map[string]struct {
@@ -66,7 +68,7 @@ func (c *Cacher[T]) Flush() {
 	c.Mutex.Unlock()
 }
 
-func initCacher[T any]() Cacher[*T] {
+func InitCacher[T any]() Cacher[*T] {
 	return Cacher[*T]{
 		Cache: make(map[string]struct {
 			Value   *T
@@ -79,7 +81,7 @@ type Thing struct {
 	Name string
 }
 
-var ThingCacher = initCacher[Thing]()
+var ThingCacher = InitCacher[Thing]()
 
 func main() {
 	isu := &Thing{Name: "isu"}
