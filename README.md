@@ -113,6 +113,13 @@ git push -u origin main
 
 ## 調査
 
+#### Serviceの状態確認
+
+```
+systemctl list-unit-files --type=service | grep -e isu -e nginx -e sql
+systemctl status isu.service
+```
+
 #### VMの状態確認
 ```sh
 arch
@@ -196,8 +203,8 @@ sudo chmod 777 /var/log/nginx/error.log
 ```nginx
 http {
     log_format with_time '$remote_addr - $remote_user [$time_local] '
-                 '"$request" $status $body_bytes_sent '
-                 '"$http_referer" "$http_user_agent" $request_time';
+      '"$request" $status $body_bytes_sent '
+      '"$http_referer" "$http_user_agent" $request_time';
     access_log /var/log/nginx/access.log with_time;
 }
 ``` 
@@ -738,6 +745,7 @@ alias mg="git merge"
 alias rename="git branch -m"
 alias del="git branch -D"
 alias refresh="git checkout . && git clean -df"
+alias pullf='function _pullf() { git fetch origin $@ && git reset --hard origin/$@; }; _pullf'
 EOL
 source ~/.bashrc
 ```
