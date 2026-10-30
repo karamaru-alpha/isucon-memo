@@ -8,8 +8,8 @@ description: ISUCONで計測結果(kataribe / pt-query-digest / pprof)から最�
 計測データをもとにボトルネックを 1 つずつ潰す。サイクルは次のとおり。
 
 ```
-/isucon-survey で計測 → ボトルネック特定 → 1 施策だけ実装 → コミット
-→ /isucon-deploy → ベンチ → /isucon-survey → 改善なら次へ / 悪化なら revert
+/isucon-survey で計測 → ボトルネック特定 → 1 施策だけ実装 → /pr で draft PR 作成（ここで止まる）
+→ PR をマージ → /isucon-deploy → ベンチ → /isucon-survey → 改善なら次へ / 悪化なら revert
 ```
 
 ## 前提
@@ -62,8 +62,11 @@ description: ISUCONで計測結果(kataribe / pt-query-digest / pprof)から最�
 
 ### 3. コードを読む
 
+1 施策 = 1 PR にするため、最新の main から作業を始める。未コミットの差分があれば、何の変更かユーザーに確認してから進める。
+
 ```sh
 cd ~/github.com/karamaru-alpha/isucon2026
+git switch main && git pull --ff-only
 grep -rn "<クエリの特徴的な部分>" --include=*.go .
 ```
 
@@ -94,10 +97,18 @@ go build ./... && go vet ./...
 
 ビルドが通らない状態ではコミットしない。
 
-### 6. コミットしてデプロイへ渡す
+### 6. /pr で PR を作成して止まる
 
-- 1 施策 = 1 コミット。メッセージは何をなぜ変えたかが分かるようにする（例: `isu_condition に (jia_isu_uuid, timestamp) の index を追加`）。
-- 変更内容と期待効果をユーザーに報告し、`/isucon-deploy` → ベンチ → `/isucon-survey` へ進む。
+改善が終わったら、Skill ツールで `pr` スキルを呼び出して draft PR を作成する。ブランチ作成（main 上なら `perf/karamaru/<施策名>`）・コミット・push は `pr` スキルが行う。
+
+- 1 施策 = 1 PR。別の施策の変更を混ぜない。
+- 変更種別は `perf` にする。
+- PR 本文の「ポイント」には次を書く:
+  - 根拠の計測値（例: `GET /api/xxx` が Sum 120s で 1 位、該当クエリが examine 50 万行 / sent 10 行）
+  - 施策の内容と期待効果
+  - 再起動・`/initialize` 時の扱い（インデックスやキャッシュの初期化経路）
+- PR の URL を報告したら、そこで止まる。デプロイやベンチには進まない。
+- 次の行動として「PR をマージしたら `/isucon-deploy` → ベンチ → `/isucon-survey` で効果を確認するのだ」と案内する。
 - ベンチ後にスコアが下がった、または FAIL した場合は、その場でデバッグせずに `git revert` してデプロイし直し、原因を落ち着いて調べる。
 
 ## 終盤（残り 1 時間を切ったら）
