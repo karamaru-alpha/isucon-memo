@@ -61,6 +61,10 @@ isu1:
 #	sudo systemctl restart $(APP).go.service
 
 
+.PHONY: rotate
+rotate:
+	sudo truncate -s 0 $(NGINX_LOG) $(NGINX_ERR) $(MYSQL_LOG) $(MYSQL_ERR) $(GO_LOG) 2>/dev/null || true
+
 .PHONY: slow
 slow:
 	sudo $(APP_PATH)/slow.sh $(MYSQL_LOG)
