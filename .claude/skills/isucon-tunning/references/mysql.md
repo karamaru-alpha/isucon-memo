@@ -320,3 +320,172 @@ func main() {
 }
 ```
 
+---
+
+<!-- ここから下は ISUCON10〜14 の上位解法・公式講評の調査から追記したもの -->
+
+## interpolateParams
+
+prepared statementの PREPARE / EXECUTE / CLOSE の往復が1回になる。pt-query-digestで `PREPARE` や `administrator command: Close stmt` が上位なら確実に効く (10〜14で毎回上位チームが使用)
+```go
+dsn := "isucon:isucon@tcp(127.0.0.1:3306)/isucon?parseTime=true&interpolateParams=true"
+// or cfg.InterpolateParams = true
+```
+
+## 書き込み系のmy.cnf
+
+```ini
+[mysqld]
+disable-log-bin                  # MySQL8はデフォルトでbinlogを出す
+innodb_flush_log_at_trx_commit = 0   # 2でもよい
+innodb_doublewrite = 0
+innodb_flush_method = O_DIRECT
+innodb_log_writer_threads = off  # CPUコアが少ないとき
+innodb_buffer_pool_size = 1G     # メモリの量を見て。上げてスコアが下がった例もある
+performance_schema = off
+skip-name-resolve = 1
+max_connections = 1024
+```
+
+- redo logを tmpfs に置く例もある(10予選, 12予選 matsuu)。再起動試験でデータが残るか必ず確認する
+```ini
+innodb_log_group_home_dir = /dev/shm/
+```
+```
+# /etc/apparmor.d/usr.sbin.mysqld に追記
+/dev/shm/ r,
+/dev/shm/** rwk,
+```
+- MySQL5.7のクエリキャッシュは `query_cache_size` だけでなく `query_cache_type = ON` も必要 (8.0には無い)
+
+cf. https://matsuu.hatenablog.com/entry/2020/09/13/131145
+
+## 外部キー制約を外す
+
+INSERT/UPDATE/DELETEのたびに参照先をチェックする。通常のINDEXに置き換える (11本選)
+```sql
+-- CONSTRAINT FK_registrations_user_id FOREIGN KEY (user_id) REFERENCES users (id)
+INDEX idx_user_id (user_id)
+```
+
+## 自然キーを主キーにする
+
+`id AUTO_INCREMENT` + 別インデックスより、一意な自然キーをPK(クラスタインデックス)にした方が読み書きとも軽い。複合PKの列順はWHEREに合わせる (11予選 isu_condition, 11本選 unread_announcements)
+```sql
+CREATE TABLE isu_condition (
+  jia_isu_uuid CHAR(36) NOT NULL,
+  `timestamp` DATETIME NOT NULL,
+  ...
+  PRIMARY KEY (jia_isu_uuid, `timestamp`)
+);
+```
+- `/initialize` でテーブルをDROPする問題ではschema.sql側を書き換える
+
+## 降順インデックス
+
+`ORDER BY popularity DESC, id ASC` のようなASC/DESC混在はfilesortになる (10予選)
+```sql
+-- MySQL8
+ALTER TABLE estate ADD INDEX idx_pop (popularity DESC, id ASC);
+-- MySQL5.7, MariaDBはDESCが無視されるので符号反転したカラムを作る
+ALTER TABLE estate ADD COLUMN popularity_desc INT AS (-popularity) STORED, ADD INDEX (popularity_desc, id);
+-- ORDER BY popularity_desc, id
+```
+- ソート順を勝手に変えるとベンチが落ちる。`id ASC` も含めて互換を保つ
+
+## 重い条件はORDER BY LIMITの後に評価させる
+
+関数・LIKEなどの重い条件をWHEREに入れると、軽い条件に当たった全行で評価される。並べた結果を上から評価してLIMITで打ち切る (10予選 2087→2978点)
+```sql
+-- before
+SELECT * FROM estate WHERE α AND ST_Contains(β) ORDER BY γ LIMIT 50
+-- after
+SELECT * FROM (SELECT * FROM estate WHERE α ORDER BY γ) AS t WHERE ST_Contains(β) LIMIT 50
+```
+cf. https://akouryy.hatenablog.jp/entry/2020/09/13/130415
+
+## 範囲条件を区分IDにする
+
+検索の範囲が決まった区分だけなら、区分番号のカラムを持たせて等値条件にすると複合インデックスが効く (10予選)
+```sql
+ALTER TABLE estate ADD COLUMN rent_id INT AS (
+  CASE WHEN rent < 50000 THEN 0 WHEN rent < 100000 THEN 1 WHEN rent < 150000 THEN 2 ELSE 3 END
+) STORED, ADD INDEX (rent_id);
+-- WHERE rent >= ? AND rent < ? → WHERE rent_id = ?
+```
+
+## 空間インデックス
+
+緯度経度の多角形検索はPOINTカラム + SPATIAL INDEXで1クエリにする (10予選 なぞって検索)
+```sql
+-- MySQL8は SRID 0 を付けないとインデックスが使われない。INSERT時にもpointを入れる
+ALTER TABLE estate ADD COLUMN point POINT SRID 0 NULL;
+UPDATE estate SET point = POINT(latitude, longitude);
+ALTER TABLE estate MODIFY COLUMN point POINT SRID 0 NOT NULL, ADD SPATIAL INDEX (point);
+SELECT * FROM estate WHERE ST_Contains(ST_PolygonFromText(?), point) ORDER BY popularity DESC, id LIMIT 50;
+```
+cf. https://isucon.net/archives/55025156.html
+
+## 読んで書くをUPDATE1発にする
+
+```sql
+-- SELECT ... FOR UPDATE してから在庫を減らす → 条件付きUPDATEにしてRowsAffectedで判定 (10予選)
+UPDATE chair SET stock = stock - 1 WHERE id = ? AND stock > 0;
+-- 残高を読んで足して書き戻す → 相対更新 (12本選)
+UPDATE users SET isu_coin = isu_coin + ? WHERE id = ?;
+-- マスタを読んでINSERT → INSERT ... SELECT
+INSERT INTO user_cards (user_id, card_id, amount_per_sec) SELECT ?, id, amount_per_sec FROM item_masters WHERE id = ?;
+```
+```go
+res, _ := db.Exec("UPDATE chair SET stock = stock - 1 WHERE id = ? AND stock > 0", id)
+if n, _ := res.RowsAffected(); n == 0 {
+	return c.NoContent(http.StatusNotFound) // 売り切れ
+}
+```
+
+## 不要なトランザクションを外す
+
+SELECTだけのハンドラのBEGIN/COMMITは往復が増え、COMMITがスロークエリ上位に出る (11本選)。外してよいかはベンチの整合性チェックで確認する
+
+## 論理削除をやめる
+
+`deleted_at IS NULL` 付きの検索は行数もインデックスも膨らむ。整合性チェックで履歴を見られないなら物理削除にする (12本選 user_sessions 78910→85692点)
+```sql
+-- UPDATE user_sessions SET deleted_at = ? WHERE user_id = ? AND deleted_at IS NULL
+DELETE FROM user_sessions WHERE user_id = ?;
+-- UNIQUE (user_id, deleted_at, session_id) → UNIQUE (session_id)
+```
+
+## OFFSETをやめる(keyset pagination)
+
+OFFSETが大きいと読み飛ばす行もスキャンする。次ページのURLをサーバーが返す(Linkヘッダなど)なら書き換えられる (11本選)
+```sql
+SELECT * FROM announcements WHERE id < ? ORDER BY id DESC LIMIT 20
+```
+
+## 最新値・累積値を親テーブルに持つ
+
+履歴テーブルからLAG/ROW_NUMBERで最新状態や総距離を毎回出しているなら、親テーブルに持って差分を足し込む (14 chair_locations)
+```sql
+ALTER TABLE chairs ADD latitude INT NULL, ADD longitude INT NULL, ADD total_distance INT NOT NULL DEFAULT 0;
+UPDATE chairs SET latitude = ?, longitude = ?, total_distance = total_distance + ? WHERE id = ?;
+```
+- 「空いているか」なども最新ステータスから導出せずフラグカラムにしてINDEXを張る (14 is_matchable)
+- 追加したカラムの初期値を埋めた状態で初期データのダンプを作り直すと `/initialize` が速い
+
+## 書き込み時にランキングを作る
+
+ランキングが変わるのは書き込み時だけ。書き込み時に計算してbulk upsertし、読み込みはSELECTのみにする (12予選)
+```sql
+INSERT INTO ranking (tenant_id, competition_id, `rank`, score, player_id) VALUES (...), (...)
+ON DUPLICATE KEY UPDATE score = VALUES(score), player_id = VALUES(player_id);
+```
+- best/latestのような集計は `IF(? >= IFNULL(best_score, 0), ?, best_score)` で1本のUPDATEにまとめられる (10本選)
+
+## SQLiteからMySQLへ移す
+
+- テナントごとのSQLiteファイルなどは MySQL へ移すと複数台・インデックス・トランザクションが使える (12予選)
+- 1行ずつのINSERTに変換すると遅いので、変換済みのデータを `/initialize` で流し込めるよう事前にダンプしておく(`/initialize` は時間制限あり)
+- `mysql --default-character-set=utf8mb4` を付けないと文字化けする
+
+cf. https://isucon.net/archives/56850281.html

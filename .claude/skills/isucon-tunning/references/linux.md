@@ -50,3 +50,19 @@ WantedBy = multi-user.target
 sudo systemctl daemon-reload
 ```
 
+---
+
+<!-- ここから下は ISUCON10〜14 の上位解法・公式講評の調査から追記したもの -->
+
+## 再起動試験でsystemdが止まらないようにする
+
+起動順がずれて再起動を繰り返すとsystemdがunitを諦めて止める (10予選, 11本選, 12本選)
+```
+sudo systemctl edit isucon.go.service
+---
+[Unit]
+After=mysql.service
+StartLimitBurst=999
+---
+```
+- アプリ側でもDBの起動を待つ(mysql.md「DBの起動を待つ」)

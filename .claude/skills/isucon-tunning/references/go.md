@@ -585,3 +585,279 @@ func main() {
 }
 ```
 
+---
+
+<!-- ここから下は ISUCON10〜14 の上位解法・公式講評の調査から追記したもの -->
+
+## デバッグモード・ログ出力を止める
+
+stdoutへの大量ログはjournaldのCPUを食う。初手で確認し、終盤はslow_query_log・nginxのaccess_logも切る (10予選, 11予選)
+```go
+// e.Use(middleware.Logger()) を削除
+e.Debug = false
+e.Logger.SetLevel(log.ERROR)
+```
+
+## 非同期でバルクINSERTする
+
+即時に読まれない書き込み(ログ・計測値)はchannelに溜めて202を返し、定期的にまとめてINSERTする (11予選 isu_condition, 14 chair_locations)
+```go
+var insertCh = make(chan []any, 10000)
+
+func insertWorker() {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	var ph []string
+	var args []any
+	for {
+		select {
+		case v := <-insertCh:
+			ph = append(ph, "(?, ?, ?)")
+			args = append(args, v...)
+		case <-ticker.C:
+			if len(ph) == 0 {
+				continue
+			}
+			if _, err := db.Exec("INSERT INTO isu_condition (jia_isu_uuid, timestamp, message) VALUES "+strings.Join(ph, ","), args...); err != nil {
+				log.Print(err)
+			}
+			ph, args = ph[:0], args[:0]
+		}
+	}
+}
+
+// handler: insertCh <- []any{uuid, ts, msg}; return c.NoContent(http.StatusAccepted)
+```
+cf. https://github.com/narusejun/isucon11-qualify , https://blog.agatan.dev/posts/isucon11-qualify
+
+## マイクロキャッシュ(短TTL + SingleFlight)
+
+引数が定数の重い集計は、singleflightで同時実行を1本にまとめた上で数百ms保持する (11本選 GPA)
+```go
+var (
+	sf       singleflight.Group
+	mu       sync.RWMutex
+	cached   []float64
+	cachedAt time.Time
+)
+
+func getGPAs() ([]float64, error) {
+	mu.RLock()
+	if time.Since(cachedAt) < 900*time.Millisecond {
+		defer mu.RUnlock()
+		return cached, nil
+	}
+	mu.RUnlock()
+	v, err, _ := sf.Do("gpa", func() (any, error) {
+		start := time.Now() // 計算開始時刻を保存して保守的に
+		var r []float64
+		if err := db.Select(&r, query); err != nil {
+			return nil, err
+		}
+		mu.Lock()
+		cached, cachedAt = r, start
+		mu.Unlock()
+		return r, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.([]float64), nil
+}
+```
+cf. https://github.com/fujiwara/isucon11-f
+
+## 圧縮済みレスポンスを事前生成する
+
+「N秒古くてよい」レスポンスはtickerで作り、gzip済みのバイト列で持ってそのまま返す (10本選 ダッシュボード)
+```go
+var dashboard atomic.Pointer[[]byte]
+
+func dashboardWorker() {
+	for range time.Tick(500 * time.Millisecond) {
+		res, _ := json.Marshal(makeDashboard())
+		var buf bytes.Buffer
+		w, _ := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
+		w.Write(res)
+		w.Close()
+		b := buf.Bytes()
+		dashboard.Store(&b)
+	}
+}
+
+func getDashboard(c echo.Context) error {
+	c.Response().Header().Set("Content-Encoding", "gzip")
+	return c.Blob(http.StatusOK, "application/json", *dashboard.Load())
+}
+```
+cf. https://kazeburo.hatenablog.com/entry/2020/10/14/111149
+
+## 状態変化をchannelで通知する
+
+ロングポーリング/SSEで状態変化を待つとき、DBを定期的に見に行かず更新側からシグナルを送る (14 chair通知)
+```go
+var sigs sync.Map // id -> chan struct{}
+
+func register(id string) chan struct{} {
+	ch := make(chan struct{}, 1) // バッファ1で取りこぼさない
+	sigs.Store(id, ch)
+	return ch
+}
+func unregister(id string, ch chan struct{}) { sigs.CompareAndDelete(id, ch) }
+
+// 状態を更新した箇所で呼ぶ
+func signal(id string) {
+	if v, ok := sigs.Load(id); ok {
+		select {
+		case v.(chan struct{}) <- struct{}{}:
+		default: // 既に通知待ちなら捨てる
+		}
+	}
+}
+
+// 待つ側: select { case <-ctx.Done(): case <-ch: case <-time.After(time.Second): /* 保険 */ }
+```
+cf. https://github.com/takonomura/isucon14
+
+## Server-Sent Events
+
+ポーリングをSSEにする。nginxのバッファリングを `X-Accel-Buffering: no` で切るのを忘れない (14)
+```go
+func sse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	rc := http.NewResponseController(w)
+	ch := register(id)
+	defer unregister(id, ch)
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case <-ch:
+			b, _ := json.Marshal(getNotification(id))
+			fmt.Fprintf(w, "data: %s\n\n", b)
+			if err := rc.Flush(); err != nil {
+				return
+			}
+		}
+	}
+}
+```
+- 公式講評では「上位に必須ではなかった」。まずは `retry_after_ms` を状態に応じて伸ばす方が安い
+cf. https://isucon.net/archives/58869617.html
+
+## キー単位のロック
+
+flock(ファイルロック)やアプリ全体のMutexはキー単位のMutexにする。複数台ならDBのトランザクション/条件付きUPDATEにする (12予選)
+```go
+var locks sync.Map // key -> *sync.Mutex
+
+func lock(key string) func() {
+	m, _ := locks.LoadOrStore(key, &sync.Mutex{})
+	m.(*sync.Mutex).Lock()
+	return m.(*sync.Mutex).Unlock
+}
+
+// defer lock(tenantID)()
+```
+
+## ID採番をアプリでする
+
+`REPLACE INTO id_generator` のような採番テーブルは書き込みの直列化点になる (12予選・本選)
+```go
+// 文字列でよいなら
+id := uuid.NewString()
+
+// 数値で1台なら AUTO_INCREMENT + res.LastInsertId()
+
+// 数値で複数台ならSnowflake (github.com/bwmarrin/snowflake)
+node, _ := snowflake.NewNode(nodeID) // 台ごとに変える
+id := node.Generate().Int64()
+```
+
+## ユーザーID単位のシャーディング
+
+- 下位ビットはシーケンス番号でほぼ0なので、Snowflake IDをそのまま `% N` すると偏る
+- セッションIDにユーザーIDを埋め込むと、セッション検証時に引くべきシャードが分かる
+- `/initialize` は全DBホストに並列で配る
+```go
+func selectDB(userID int64) *sqlx.DB { return dbs[int(userID>>23)%len(dbs)] }
+
+// 発行時
+sessID := fmt.Sprintf("%s::%d", uuid.NewString(), userID)
+// 検証時
+parts := strings.Split(c.Request().Header.Get("x-session"), "::")
+uid, _ := strconv.ParseInt(parts[1], 10, 64)
+selectDB(uid).Get(&sess, "SELECT * FROM user_sessions WHERE session_id = ?", c.Request().Header.Get("x-session"))
+```
+cf. https://github.com/narusejun/isucon12-final/blob/master/app/webapp/go/db.go
+
+## ETag / If-None-Matchで304を返す
+
+画像はハッシュを保存しておき、一致したらボディを返さない。ヘッダ値はダブルクォート付き (13 アイコン)
+```go
+etag := `"` + iconHash + `"`
+if c.Request().Header.Get("If-None-Match") == etag {
+	return c.NoContent(http.StatusNotModified)
+}
+c.Response().Header().Set("ETag", etag)
+return c.Blob(http.StatusOK, "image/jpeg", image)
+```
+- ハッシュはINSERT時に計算する(triggerなら `SET NEW.icon_hash = SHA2(NEW.image, 256)`)
+cf. https://isucon.net/archives/58001272.html
+
+## 外部コマンドを呼ばない・ファイルはストリームで扱う
+
+- `exec.Command("zip", ...)` は `archive/zip` の `zip.Store`(無圧縮)にする。`cp` はハードリンクにする (11本選)
+- アップロードは `io.ReadAll` せず `io.Copy` でファイルに書く
+```go
+zw := zip.NewWriter(f)
+fw, _ := zw.CreateHeader(&zip.FileHeader{Name: name, Method: zip.Store})
+src, _ := os.Open(path)
+io.Copy(fw, src)
+src.Close()
+zw.Close()
+c.Response().Header().Set("X-Accel-Redirect", "/assignments/"+classID+".zip")
+```
+cf. https://isucon.net/archives/56163308.html
+
+## アロケーション・GCを減らす
+
+pprofで `mallocgc` / GCが上位に来たとき (12本選)
+```go
+var bufPool = sync.Pool{New: func() any { return new(bytes.Buffer) }}
+
+buf := bufPool.Get().(*bytes.Buffer)
+buf.Reset()
+defer bufPool.Put(buf)
+```
+```
+# systemdのEnvironmentに書く(ビルド時ではなく実行時の環境変数)
+Environment=GOGC=2000
+```
+
+## PGO
+
+pprofで取ったCPUプロファイルを使ってビルドする。終盤にノーリスクで入れられる (13, 14)
+```sh
+curl -o default.pgo "http://localhost:6060/debug/pprof/profile?seconds=60" # ベンチ中に取得
+go build -pgo=default.pgo -o isucon
+```
+
+## SQLに呼び出し元をコメントで付ける
+
+スロークエリを見てもどのハンドラか分からない問題を解消する (14 LayerX)
+```go
+func withCaller(query string) string {
+	_, file, line, _ := runtime.Caller(1)
+	// pt-query-digestは数字を?に正規化するので行番号は全角にする
+	return fmt.Sprintf("/* %s:%s */ %s", filepath.Base(file), toFullWidth(line), query)
+}
+
+func toFullWidth(n int) string {
+	return strings.Map(func(r rune) rune { return r - '0' + '０' }, strconv.Itoa(n))
+}
+
+// db.Select(&users, withCaller("SELECT * FROM users WHERE id = ?"), id)
+```
+cf. https://zenn.dev/layerx/articles/3bd55b77e047c4
