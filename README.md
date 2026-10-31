@@ -1200,6 +1200,23 @@ location / {
 
 #### Botからのリクエストを拒否
 
+ISUCON10予選のように「botのUser-Agentには503を返して良い(減点なし)」とマニュアルに書かれている場合がある。
+**弾いて良いか・返すステータスコード・botのUA定義は必ずマニュアル/レギュレーションで確認する**(書かれていないのに弾くと失格・エラー扱いのリスク)。
+
+1. マニュアルで `bot` `User-Agent` `503` あたりを検索する
+2. アクセスログ(`$http_user_agent` を出す `with_time` フォーマット)でUAを集計し、bot流入の有無と割合を確認する
+
+```sh
+# UA別のリクエスト数 (log_formatの6番目の""がUA)
+awk -F'"' '{print $6}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | head -30
+# bot/crawler/spiderっぽいUAだけ抽出
+awk -F'"' '{print $6}' /var/log/nginx/access.log | grep -iE 'bot|crawler|spider' | sort | uniq -c | sort -rn
+# botがどのエンドポイントを叩いているか
+grep -iE 'bot|crawler|spider' /var/log/nginx/access.log | awk '{print $6, $7}' | sort | uniq -c | sort -rn | head
+```
+
+3. マニュアルの正規表現をそのまま `map` に写して弾く (`map` は `http` コンテキストに書く)
+
 ```nginx configuration
 map $http_user_agent $bot {
     default 0;
@@ -1222,6 +1239,20 @@ server {
     
     # if ( $http_user_agent ~* ISUCONbot(-Mobile)? ) { return 503; }
 }
+```
+
+- `if` は `server` 直下に置き、`location` より前で返す(アプリ・DBまで到達させないのが目的)
+- 反映後、botのリクエストが503になっているかステータス別に確認する
+
+```sh
+grep -iE 'bot|crawler|spider' /var/log/nginx/access.log | awk '{print $9}' | sort | uniq -c
+```
+
+- 確認が済んで、弾いたbotのログがkataribe等の集計のノイズになるなら記録しない
+
+```nginx configuration
+map $bot $loggable { 1 0; default 1; }
+access_log /var/log/nginx/access.log with_time if=$loggable;
 ```
 
 #### 圧縮 / 事前圧縮

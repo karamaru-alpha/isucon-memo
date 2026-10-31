@@ -35,6 +35,7 @@
 | 外部 HTTP 呼び出しが遅い・ポート枯渇 | `http.Client` を使い回し、`MaxIdleConnsPerHost` を広げる | go.md「httpを広げる」 / go.md「httpリクエスト」 |
 | 即時に反映しなくてよい集計処理 | ticker で定期的にまとめて処理する | go.md「一定時間毎に処理をする」 |
 | nginx ↔ アプリ間の TCP オーバーヘッド | Unix domain socket | go.md「UnixDomainSocket」 |
+| 大きなボトルネックを潰し終えて、Go の CPU 使用率が高い | `GOAMD64=v3` でビルドする（効果は数 % 程度か誤差。必ずベンチで確かめる） | go.md「CPU の命令セットレベルを上げる（GOAMD64）」 |
 
 ## nginx / OS
 

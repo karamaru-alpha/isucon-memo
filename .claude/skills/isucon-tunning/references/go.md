@@ -130,6 +130,38 @@ go tool dist list
 GOOS=linux GOARCH=arm64 go build -o isucon *.go
 ```
 
+### CPU の命令セットレベルを上げる（GOAMD64）
+
+Go は amd64 向けにデフォルトで `GOAMD64=v1`（全 x86-64 CPU で動く最低限の命令）でビルドする。`v3` にすると AVX2・BMI2・LZCNT・FMA などを使ったコードを生成する。
+
+| レベル | v1 から増える主な命令 |
+| --- | --- |
+| v1（デフォルト） | — |
+| v2 | POPCNT、SSE3、SSE4.1/4.2、SSSE3、CMPXCHG16B |
+| v3 | v2 + AVX、AVX2、BMI1/2、F16C、FMA、LZCNT、MOVBE |
+| v4 | v3 + AVX512 系（ただし現在の Go は AVX512 命令を生成しないので、v3 との差はほぼない） |
+
+```sh
+# サーバーの CPU が v3 に対応しているか確認する（glibc 2.33 以降）
+/lib64/ld-linux-x86-64.so.2 --help | grep 'x86-64-v'
+# => x86-64-v3 (supported, searched) なら OK
+
+# ビルド（Makefile の go build にも付ける）
+GOAMD64=v3 go build -o isucon
+```
+
+効果の目安:
+
+- 「2 割速くなる」は、protobuf-go の `SizeVarint` という 1 関数のマイクロベンチの数字。BSR → LZCNT への置き換えで Zen 2 では約 -50%、コードの書き換えも合わせて Skylake で約 -19% になった。コミットの作者自身が「実際の Protobuf 利用ではこの変更単体で計測できるほどの改善はない」と書いている（protocolbuffers/protobuf-go@8e8926e）。
+- ISUCON のアプリは DB 待ちや I/O 待ちが支配的なので、スコアへの効果は数 % 以内か誤差になると見ておく。ビット演算・ハッシュ・JSON・画像処理などで Go の CPU が張り付いているときほど効く可能性がある。
+- 公式も「上位レベルで速くなることはあるが保証はない。ベンチで確かめること」としている（go.dev/wiki/MinimumRequirements#amd64）。
+
+注意:
+
+- 対応していない CPU で動かすと、起動直後に `This program can only be run on AMD64 processors with v3 microarchitecture support.` で落ちる。ビルドしたマシンではなく、**実行するサーバー**の CPU で確認する。
+- `GOARCH=arm64`（Graviton など）のサーバーでは `GOAMD64` は効かない。arm64 には `GOARM64`（Go 1.23 以降、デフォルト `v8.0`）がある。
+- 他の施策と同じく 1 ベンチ 1 施策で入れ、改善しなければ戻す。変更が 1 行で済むので、上位のボトルネックを潰し終えて Go の CPU 使用率が高い段階で試すとよい。
+
 ## SingleFlight
 
 ```go
