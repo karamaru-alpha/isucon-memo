@@ -105,10 +105,10 @@ source ~/.bashrc
 
 #### githubで管理するまで
 ```sh
-git remote add origin git@github.com:karamaru-alpha/isucon12-q.git
+git remote add origin git@github.com:karamaru-alpha/isucon2026.git
 git add . && git commit -m "init"
 git branch -M master main
-git push -u origin main
+git push -f -u origin main
 ```
 
 ## 調査
@@ -724,7 +724,7 @@ git config --global user.name karamaru-alpha
 git config --global user.email mrnk3078@gmail.com
 git config --global pull.rebase false
 git config credential.helper store
-git remote add origin git@github.com:karamaru-alpha/isucon12-q.git
+git remote add origin git@github.com:karamaru-alpha/isucon2026.git
 git fetch origin main && git reset --hard origin/main
 git branch -M master main	
 ```
