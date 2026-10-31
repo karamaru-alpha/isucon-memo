@@ -1,6 +1,6 @@
 ---
 name: isucon-tunning
-description: ISUCONで計測結果(kataribe / pt-query-digest / pprof)から最大のボトルネックを1つ選び、karamaru-alpha/isucon2026 のGoアプリ・MySQL・nginxをチューニングする。「チューニングして」「ボトルネックを直して」「スコアを上げて」「isucon-tunning」などの言葉が出たら使う。
+description: ISUCONで計測結果(kataribe, pt-query-digest)から最大のボトルネックを1つ選び、karamaru-alpha/isucon2026 のGoアプリ・MySQL・nginxをチューニングする。「チューニングして」「ボトルネックを直して」「スコアを上げて」「isucon-tunning」などの言葉が出たら使う。
 ---
 
 # isucon-tunning
