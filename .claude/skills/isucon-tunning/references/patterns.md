@@ -6,10 +6,11 @@
 - [mysql.md](mysql.md): MySQL（bulk insert、IN 句、upsert、DB 分離、UUID の BINARY 化など）
 - [nginx.md](nginx.md): nginx（keepalive、静的配信、proxy_cache、X-Accel-Redirect、振り分け、圧縮など）
 - [linux.md](linux.md): Linux（fd 上限、systemd、再起動試験）
+- [image.md](image.md): 画像・静的ファイル（BLOB のファイル化、キャッシュヘッダ、独自ハッシュでの 304、複数台での置き場所、リサイズ）
 - [dns.md](dns.md): DNS（PowerDNS のキャッシュ、dnsdist、DNS サーバー自作）
 - [strategy.md](strategy.md): 定石・考え方（マニュアルから緩めてよい箇所を探す、事前計算、複数台構成の決め方）
 
-各 reference の「ここから下は ISUCON10〜14 の…調査から追記したもの」より下と、dns.md / strategy.md は過去回の上位解法の調査から追加したもの。表では解法列に `[調査]` を付けて区別する。
+各 reference の「ここから下は ISUCON10〜14 の…調査から追記したもの」より下と、dns.md / image.md / strategy.md は過去回の上位解法の調査から追加したもの。表では解法列に `[調査]` を付けて区別する。
 
 ## DB
 
@@ -69,11 +70,24 @@
 | 大きな施策を終えて Go の CPU が高い | PGO ビルド | [調査] go.md「PGO」 |
 | スロークエリがどのハンドラのものか分からない | SQL に呼び出し元コメントを付ける | [調査] go.md「SQLに呼び出し元をコメントで付ける」 |
 
+## 画像・静的ファイル
+
+| 症状 | 施策 | 解法 |
+| --- | --- | --- |
+| 画像パスが kataribe 上位、304 がほとんどない | `Cache-Control: public, max-age` を付ける。最初の 200 に `Last-Modified` / `ETag` があるか確認する | [調査] image.md「nginx から配信してキャッシュヘッダを付ける」 |
+| 一覧 API が遅く、画像 BLOB を `SELECT *` で読んでいる | カラムを明示する、画像をファイルに追い出す | [調査] image.md「BLOB をファイルに出す」 |
+| 全件の書き出しが間に合わない・漏れが怖い | `try_files $uri @app` でアプリにフォールバックし、アプリが保存してから返す | [調査] image.md「書き出していない画像はアプリに回す」 |
+| ベンチが API で返したハッシュを `If-None-Match` に入れてくる | ハッシュを更新時に計算して保持し、アプリで 304。200 は X-Accel-Redirect | [調査] image.md「アプリ独自のハッシュで 304 を返す」 |
+| 外向き帯域が張り付いている（`sar -n DEV`） | 304 を増やす。画像を 1 台に集約し、他の台は内向きで proxy | [調査] image.md「複数台で画像をどこに置くか」 |
+| 複数台にしたら画像が 404 になる | 1 台に集約 / `try_files` で他の台へフォールバック / WebDAV | [調査] image.md「複数台で画像をどこに置くか」 |
+| リクエストのたびに画像をリサイズ・変換している | 事前生成し、新規はアップロード時に変換して保存 | [調査] image.md「リサイズ・変換が必要な問題」 |
+| `gzip_types` に JPEG / PNG が入っている | 外す（CPU の無駄） | [調査] image.md「画像を gzip しない」 |
+
 ## nginx / OS
 
 | 症状 | 施策 | 解法 |
 | --- | --- | --- |
-| 静的ファイルが kataribe の上位にいる | nginx から直接配信し、`expires` を付ける | nginx.md「静的ファイルのクライアントキャッシュ」 |
+| 静的ファイルが kataribe の上位にいる | nginx から直接配信し、`expires` を付ける | nginx.md「静的ファイルのクライアントキャッシュ」 / [調査] image.md |
 | 同一レスポンスを何度も返している | proxy_cache | nginx.md「レスポンスキャッシュ(ProxyCache)」 |
 | 認証付きのファイル配信 | X-Accel-Redirect | nginx.md「認証付きの静的配信(X-Accel-Redirect)」 |
 | upstream への接続を毎回張り直している | upstream keepalive | nginx.md「keepaliveを有効する」 |

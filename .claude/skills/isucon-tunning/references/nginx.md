@@ -231,7 +231,8 @@ server {
 
 ```nginx configuration
 gzip on;
-gzip_types text/css application/javascript application/json application/font-woff application/font-tff image/gif image/png image/jpeg image/svg+xml image/x-icon application/octet-stream;
+# JPEG / PNG / GIF は圧縮済みなので入れない (image.md「画像を gzip しない」)
+gzip_types text/css application/javascript application/json application/font-woff application/font-tff image/svg+xml image/x-icon;
 gzip_min_length 1k;
 ```
 

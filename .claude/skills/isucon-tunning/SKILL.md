@@ -61,10 +61,11 @@ ISUCON（Iikanji ni Speed Up Contest）は、わざと遅く作られた Web ア
 | [mysql.md](references/mysql.md) | スロークエリ設定、DB 分離（別インスタンス・外部接続・ユーザー作成）、MariaDB への乗り換え、bulk insert、IN 句、コネクションプール、起動待ち、generated column、UUID の BINARY 化、upsert、trigger、グループ最新行、件数カラム、アドバイザリロック |
 | [nginx.md](references/nginx.md) | アクセスログ設定、upstream keepalive、fd 上限、静的ファイルキャッシュ、proxy_cache、X-Accel-Redirect、メソッド / パス / クエリでの振り分け、bot 拒否、gzip / 事前圧縮 |
 | [linux.md](references/linux.md) | fd 上限、systemd のユニット定義、再起動試験 |
+| [image.md](references/image.md) | 画像・静的ファイル: BLOB のファイル化、キャッシュヘッダ、独自ハッシュでの 304、複数台での置き場所、リサイズ |
 | [dns.md](references/dns.md) | DNS が出題範囲のとき: PowerDNS の TTL・キャッシュ、dnsdist での水責め対策、DNS サーバー自作 |
 | [strategy.md](references/strategy.md) | マニュアルから緩めてよい箇所を探す観点、事前計算、複数台構成の決め方 |
 
-各ファイルの末尾（`<!-- ここから下は ISUCON10〜14 の…調査から追記したもの -->` 以降）と dns.md / strategy.md は、過去回の上位解法・公式講評の調査から追加した解法。patterns.md では `[調査]` 付きで載せている。
+各ファイルの末尾（`<!-- ここから下は ISUCON10〜14 の…調査から追記したもの -->` 以降）と dns.md / image.md / strategy.md は、過去回の上位解法・公式講評の調査から追加した解法。patterns.md では `[調査]` 付きで載せている。
 
 ## 原則
 
